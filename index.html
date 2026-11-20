@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>はるかなる遠征 — 放置RPG</title>
+<style>
+:root{
+  --bg:#0d1017; --panel:#161b26; --panel2:#1d2331; --line:#2c3447;
+  --ink:#e6eaf4; --dim:#8c96ad; --gold:#e9c46a; --green:#6ee7a8;
+  --red:#ff7b7b; --blue:#7cc4ff; --purple:#b79cff;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Segoe UI","Yu Gothic UI","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+  font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 64px;}
+
+/* ---- header ---- */
+header{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 16px;margin-bottom:16px;
+  background:linear-gradient(180deg,#1a2030,#141924);
+  border:1px solid var(--line);border-radius:14px;
+}
+header h1{margin:0;font-size:17px;letter-spacing:.06em;font-weight:700;}
+header h1 small{display:block;font-size:10px;letter-spacing:.24em;color:var(--dim);font-weight:400;margin-top:2px;}
+.who{margin-left:auto;text-align:right;font-size:11px;color:var(--dim);}
+.who b{color:var(--ink);font-size:13px;}
+.who code{font-size:10px;color:#636d85;}
+.tools{display:flex;gap:6px;flex-wrap:wrap;}
+
+/* ---- common ---- */
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px;margin-bottom:14px;
+}
+.panel h2{
+  margin:0 0 12px;font-size:12px;letter-spacing:.18em;color:var(--gold);
+  font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.panel h2 .n{
+  width:18px;height:18px;border-radius:5px;background:rgba(233,196,106,.16);
+  display:grid;place-items:center;font-size:10px;color:var(--gold);
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+
+button{
+  font:inherit;cursor:pointer;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+  padding:7px 13px;font-size:12px;transition:.15s;
+}
+button:hover:not(:disabled){background:#293146;border-color:#3d4761;}
+button:disabled{opacity:.4;cursor:not-allowed;}
+button.primary{
+  background:linear-gradient(100deg,#e9c46a,#f4a261);color:#1a1205;
+  border:0;font-weight:700;padding:11px 26px;font-size:14px;letter-spacing:.06em;
+}
+button.primary:hover:not(:disabled){filter:brightness(1.1);}
+button.ghost{background:transparent;}
+button.danger{color:var(--red);border-color:#4a2b32;}
+button.danger:hover:not(:disabled){background:#2a1a1e;}
+
+.bar{height:9px;border-radius:99px;background:#0a0d14;overflow:hidden;border:1px solid #232a3a;}
+.bar > i{display:block;height:100%;border-radius:99px;transition:width .3s;}
+.bar.hp > i{background:linear-gradient(90deg,#4ade80,#86efac);}
+.bar.hp.low > i{background:linear-gradient(90deg,#ef4444,#fca5a5);}
+.bar.exp > i{background:linear-gradient(90deg,#7cc4ff,#b79cff);}
+.bar.time > i{background:linear-gradient(90deg,#e9c46a,#f4a261);}
+
+.kv{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin:4px 0 2px;}
+.kv b{color:var(--ink);font-variant-numeric:tabular-nums;}
+
+/* ---- stats ---- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;}
+.stat span{display:block;font-size:10px;letter-spacing:.14em;color:var(--dim);}
+.stat b{display:block;font-size:19px;margin-top:2px;font-variant-numeric:tabular-nums;}
+.mul{color:var(--gold);font-size:11px;margin-top:8px;text-align:center;min-height:17px;}
+
+/* ---- equip slots ---- */
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media(max-width:560px){.slots{grid-template-columns:repeat(2,1fr);}}
+.slot{
+  background:var(--panel2);border:1px dashed #333c52;border-radius:11px;
+  padding:10px;text-align:center;min-height:92px;
+  display:flex;flex-direction:column;justify-content:center;gap:3px;
+}
+.slot.filled{border-style:solid;border-color:#3b465f;background:#1f2636;}
+.slot .lab{font-size:9.5px;letter-spacing:.16em;color:var(--dim);}
+.slot .ic{font-size:21px;line-height:1.1;}
+.slot .nm{font-size:11.5px;font-weight:600;}
+.slot .vl{font-size:10.5px;color:var(--green);font-variant-numeric:tabular-nums;}
+.slot .empty{font-size:11px;color:#525c74;}
+
+.ser{display:inline-block;font-size:9px;padding:1px 6px;border-radius:99px;margin-top:3px;}
+.ser.iron{background:rgba(160,174,200,.18);color:#b8c4dc;}
+.ser.silver{background:rgba(190,215,255,.16);color:#cfe2ff;}
+.ser.dragon{background:rgba(183,156,255,.18);color:var(--purple);}
+.ser.cook{background:rgba(255,183,120,.18);color:#ffc89a;}
+.ser.none{background:rgba(120,130,150,.14);color:#8b95ab;}
+.gold{color:var(--gold);font-variant-numeric:tabular-nums;}
+.bdg{font-size:9px;padding:1px 6px;border-radius:99px;margin-left:5px;white-space:nowrap;}
+.bdg.eq{background:rgba(110,231,168,.18);color:var(--green);}
+.bdg.dup{background:rgba(255,183,120,.18);color:#ffc89a;}
+.slot.pick{cursor:pointer;}
+.slot.pick:hover{border-color:var(--gold);background:#272436;}
+.slot .tap{font-size:9px;color:#5d6591;letter-spacing:.1em;margin-top:3px;}
+.item.isEq{border-color:#2f6b50;background:#17251f;}
+.price{font-size:11px;color:var(--gold);font-variant-numeric:tabular-nums;}
+.shopdesc{font-size:10.5px;color:var(--dim);display:block;font-weight:400;}
+
+/* ---- inventory ---- */
+.invtabs{display:flex;gap:6px;margin-bottom:10px;}
+.invtabs button{white-space:nowrap;flex:1;padding:7px 6px;}
+@media(max-width:460px){.invtabs button{font-size:10.5px;padding:7px 3px;letter-spacing:-.02em;}}
+.invtabs button.on{background:#303a52;border-color:#47536f;color:#fff;}
+.invlist{display:flex;flex-direction:column;gap:6px;min-height:40px;}
+.item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;
+}
+.item.on{border-color:var(--gold);background:#272436;}
+.item .ic{font-size:17px;}
+.item .nm{font-size:12px;font-weight:600;flex:1;}
+.item .vl{font-size:11px;color:var(--green);font-variant-numeric:tabular-nums;}
+.item .btns{display:flex;gap:5px;}
+.item button{padding:4px 9px;font-size:10.5px;}
+.empty-msg{color:#525c74;font-size:11.5px;text-align:center;padding:12px 0;}
+
+/* ---- stages ---- */
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:760px){.stages{grid-template-columns:1fr;}}
+.stage{
+  background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:13px;cursor:pointer;transition:.15s;text-align:left;
+}
+.stage:hover{border-color:#4a5572;background:#232b3d;}
+.stage.on{border-color:var(--gold);background:#272436;box-shadow:0 0 0 1px rgba(233,196,106,.3);}
+.stage .top{display:flex;align-items:center;gap:8px;}
+.stage .ic{font-size:22px;}
+.stage .nm{font-weight:700;font-size:13.5px;}
+.stage .lv{font-size:9.5px;letter-spacing:.14em;color:var(--dim);}
+.stage .desc{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.55;}
+.stage .meta{display:flex;gap:10px;margin-top:8px;font-size:10.5px;color:var(--blue);}
+
+/* ---- adventure ---- */
+.advhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.advhead .ic{font-size:30px;}
+.advhead .nm{font-size:16px;font-weight:700;}
+.advhead .sub{font-size:11px;color:var(--dim);}
+.advhead .clock{
+  margin-left:auto;text-align:right;font-variant-numeric:tabular-nums;
+}
+.advhead .clock b{font-size:22px;}
+.advhead .clock span{display:block;font-size:10px;letter-spacing:.14em;color:var(--dim);}
+
+.enemy{
+  background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+  padding:11px 13px;margin:12px 0;display:flex;align-items:center;gap:12px;min-height:62px;
+}
+.enemy .ic{font-size:26px;}
+.enemy .nm{font-weight:700;font-size:13.5px;}
+.enemy .tag{font-size:9.5px;padding:1px 7px;border-radius:99px;margin-left:6px;}
+.tag.boss{background:rgba(255,123,123,.18);color:var(--red);}
+.tag.big{background:rgba(183,156,255,.2);color:var(--purple);}
+.tag.var{background:rgba(233,196,106,.18);color:var(--gold);}
+.enemy .side{flex:1;}
+.enemy.idle{color:var(--dim);font-size:12px;justify-content:center;}
+
+#log{
+  background:#080b11;border:1px solid var(--line);border-radius:11px;
+  height:330px;overflow-y:auto;padding:12px 14px;
+  font-family:"Consolas","SFMono-Regular","Yu Gothic UI",monospace;
+  font-size:12.2px;line-height:1.85;
+}
+#log .l{display:flex;gap:9px;}
+#log .t{color:#515c76;flex:none;font-variant-numeric:tabular-nums;}
+#log .m{flex:1;word-break:break-word;}
+#log .dmg{color:var(--gold);}
+#log .hurt{color:var(--red);}
+#log .kill{color:var(--green);}
+#log .get{color:var(--blue);}
+#log .lvup{color:var(--purple);font-weight:700;}
+#log .boss{color:var(--red);font-weight:700;}
+#log .fairy{color:#ffc0e8;font-weight:700;}
+#log .sys{color:var(--dim);}
+
+/* ---- modal ---- */
+.modal{
+  position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px;
+  background:rgba(4,6,11,.78);backdrop-filter:blur(3px);
+}
+.modal.hide{display:none;}
+.modal .box{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:22px;max-width:520px;width:100%;max-height:84vh;overflow-y:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.modal h3{margin:0 0 10px;font-size:17px;}
+.modal p{margin:0 0 14px;font-size:13px;color:#c3cbdd;}
+.modal .acts{display:flex;gap:9px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+.res{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0;}
+.res div{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;}
+.res span{font-size:10px;letter-spacing:.13em;color:var(--dim);display:block;}
+.res b{font-size:17px;font-variant-numeric:tabular-nums;}
+
+.note{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.7;}
+textarea{
+  font-family:"Consolas","SFMono-Regular",monospace;font-size:11px;line-height:1.5;
+  background:#0b0e15;color:#b9c0e6;border:1px solid var(--line);border-radius:8px;
+  padding:9px 11px;width:100%;height:150px;resize:vertical;
+}
+input[type=text]{
+  font:inherit;font-size:13px;background:#0b0e15;color:var(--ink);
+  border:1px solid var(--line);border-radius:8px;padding:7px 11px;width:100%;
+}
+.speed{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--dim);}
+.speed button{padding:3px 8px;font-size:10.5px;}
+.speed button.on{background:#303a52;border-color:#47536f;color:var(--gold);}
+.hide{display:none!important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>はるかなる遠征<small>IDLE QUEST — 放置RPG</small></h1>
+  </div>
+  <div class="who">
+    <b id="pname">冒険者</b>　<b class="gold" id="pgold">0 G</b><br>
+    <code id="pid">—</code>
+  </div>
+  <div class="tools">
+    <button id="btnName" class="ghost">名前</button>
+    <button id="btnExport" class="ghost">セーブ書き出し</button>
+    <button id="btnImport" class="ghost">読み込み</button>
+    <button id="btnReset" class="ghost danger">初期化</button>
+  </div>
+</header>
+
+<!-- ============ 準備画面 ============ -->
+<div id="scPrep">
+  <div class="grid2">
+    <div class="panel">
+      <h2><span class="n">1</span>冒険者</h2>
+      <div class="kv"><span>LEVEL <b id="plv">1</b></span><span>HP <b id="php">60 / 60</b></span></div>
+      <div class="bar hp"><i id="phpbar" style="width:100%"></i></div>
+      <div class="kv" style="margin-top:10px;"><span>EXP</span><span><b id="pexp">0</b> / <b id="pexpn">18</b></span></div>
+      <div class="bar exp"><i id="pexpbar" style="width:0%"></i></div>
+      <div class="stats">
+        <div class="stat"><span>こうげき</span><b id="patk">9</b></div>
+        <div class="stat"><span>ぼうぎょ</span><b id="pdef">0</b></div>
+        <div class="stat"><span>しょじきん</span><b class="gold" id="pgold2">0</b></div>
+      </div>
+      <div class="mul" id="pmul"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="n">2</span>そうび</h2>
+      <div class="slots" id="slots"></div>
+      <div class="note">同じ系統を2つ揃えると攻撃力・防御力が<b>1.25倍</b>、3つ揃うと<b>1.5倍</b>になります。装備が欠けていても出発できます。</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="n">3</span>もちもの<span style="color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;">（各5個まで・あふれたら売る）</span></h2>
+    <div class="invtabs" id="invtabs">
+      <button data-k="w" class="on">⚔️ 武器 <span id="cw"></span></button>
+      <button data-k="s">🛡️ 盾 <span id="cs"></span></button>
+      <button data-k="a">🥋 防具 <span id="ca"></span></button>
+      <button data-k="i">🧪 アイテム <span id="ci"></span></button>
+    </div>
+    <div class="invlist" id="invlist"></div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="n">4</span>売店<span style="color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;">（いらない装備を売ったお金で買えます）</span></h2>
+    <div class="invlist" id="shoplist"></div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="n">5</span>ステージをえらぶ</h2>
+    <div class="stages" id="stages"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap;">
+      <button class="primary" id="btnGo" disabled>出発する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 冒険画面 ============ -->
+<div id="scAdv" class="hide">
+  <div class="panel">
+    <div class="advhead">
+      <div class="ic" id="aIc">🌿</div>
+      <div>
+        <div class="nm" id="aNm">—</div>
+        <div class="sub" id="aSub">—</div>
+      </div>
+      <div class="clock">
+        <b id="aElapsed">0:00</b>
+        <span>けいか / <span id="aTotal">5:00</span></span>
+      </div>
+    </div>
+    <div class="bar time"><i id="aTimebar" style="width:0%"></i></div>
+
+    <div class="grid2" style="margin-top:14px;">
+      <div>
+        <div class="kv"><span>じぶん</span><span>HP <b id="aHp">60 / 60</b></span></div>
+        <div class="bar hp"><i id="aHpbar" style="width:100%"></i></div>
+        <div class="kv" style="margin-top:9px;"><span>LEVEL <b id="aLv">1</b></span><span>EXP <b id="aExp">0</b></span></div>
+        <div class="bar exp"><i id="aExpbar" style="width:0%"></i></div>
+        <div style="display:flex;gap:8px;margin-top:11px;font-size:11px;color:var(--dim);flex-wrap:wrap;">
+          <span id="aEq"></span>
+        </div>
+        <div style="margin-top:7px;font-size:11.5px;" id="aItem"></div>
+      </div>
+      <div>
+        <div class="enemy idle" id="aEnemy">街道を進んでいる…</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button id="btnAbort" class="ghost danger" style="margin-left:auto;">冒険を中断</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>冒険ログ</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ============ modal ============ -->
+<div class="modal hide" id="modal"><div class="box" id="modalBox"></div></div>
+<input type="file" id="fileIn" accept=".json,application/json" style="display:none">
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   バランス設定 — ここの数字をいじれば調整できます
+   ===================================================================== */
+var BAL = {
+  tickSeconds: 3,            // 1ターン＝3秒
+  baseHp: 60, hpPerLv: 9,    // HP = 60 + 9×(Lv-1)
+  baseAtk: 9, atkPerLv: 2,   // ATK = 9 + 2×(Lv-1)
+  healOnLevelUp: true,       // レベルアップで全回復
+  regenPerTick: 0.7,         // 移動中の自然回復（1ターンあたり）
+  variantChance: 0.04,       // 亜種の出現率
+  variantAtkMul: 1.2,        // 亜種の攻撃力倍率
+  fairyChance: 0.05,         // ステージごとの妖精遭遇率
+  chestPer10min: 1.8,        // 10分あたりの宝箱期待数（移動中のみ抽選）
+  chestPotionRate: 0.6,      // 宝箱の中身が回復薬である確率
+  potionHeal: 22,            // 薬草の回復量
+  potionThreshold: 0.4,      // HPがこの割合を下回ると自動で使う
+  invMax: 5,                 // 武器/盾/防具それぞれの所持上限
+  setMul2: 1.25, setMul3: 1.5, cookMul3: 1.6,
+  reviveHp: 0.8,             // 強制帰還の次回出発HP
+  gearPerRun: 3,             // 1回の冒険で手に入る武器・盾・防具の上限（画面には出さない）
+  bossAt: 0.80,              // 行程のこの割合で中ボスが出る
+  expNeedMul: 1.15           // 大きくするほどレベルが上がりにくくなる
+};
+
+function expToNext(lv){ return Math.round(18 * Math.pow(lv, 1.5) * BAL.expNeedMul); }
+
+/* ---- 系統 ---- */
+var SERIES = {
+  none:  {n:'無系統', c:'none'},
+  iron:  {n:'鉄',     c:'iron'},
+  silver:{n:'銀',     c:'silver'},
+  dragon:{n:'竜鱗',   c:'dragon'},
+  cook:  {n:'料理人', c:'cook'}
+};
+
+/* ---- 装備 ---- */
+var GEAR = {
+  w:[
+    {id:'w_stick', n:'木の棒',           ic:'🪵', s:'none',   v:1,  t:0, p:5},
+    {id:'w_knife', n:'さびたナイフ',     ic:'🔪', s:'none',   v:2,  t:0, p:12},
+    {id:'w_iron',  n:'アイアンソード',   ic:'⚔️', s:'iron',   v:4,  t:1, p:38},
+    {id:'w_silv',  n:'シルバーレイピア', ic:'🗡️', s:'silver', v:6,  t:2, p:95},
+    {id:'w_drag',  n:'ドラゴンファング', ic:'🦷', s:'dragon', v:9,  t:3, p:230},
+    {id:'w_fork',  n:'フォーク',         ic:'🍴', s:'cook',   v:5,  t:9, p:70}
+  ],
+  s:[
+    {id:'s_wood',  n:'木のたて',         ic:'🪵', s:'none',   v:1,  t:0, p:6},
+    {id:'s_iron',  n:'アイアンシールド', ic:'🛡️', s:'iron',   v:2,  t:1, p:38},
+    {id:'s_silv',  n:'シルバーガード',   ic:'🪞', s:'silver', v:3,  t:2, p:95},
+    {id:'s_drag',  n:'竜鱗の盾',         ic:'🐲', s:'dragon', v:5,  t:3, p:230},
+    {id:'s_lid',   n:'なべぶた',         ic:'🥘', s:'cook',   v:3,  t:9, p:70}
+  ],
+  a:[
+    {id:'a_cloth', n:'旅人の服',         ic:'👕', s:'none',   v:1,  t:0, p:6},
+    {id:'a_iron',  n:'アイアンメイル',   ic:'🥋', s:'iron',   v:2,  t:1, p:38},
+    {id:'a_silv',  n:'シルバーメイル',   ic:'🧥', s:'silver', v:3,  t:2, p:95},
+    {id:'a_drag',  n:'竜鱗の鎧',         ic:'🐉', s:'dragon', v:5,  t:3, p:230},
+    {id:'a_apron', n:'料理着',           ic:'🧑‍🍳', s:'cook', v:3,  t:9, p:70}
+  ]
+};
+
+/* ---- 売店のしなもの ---- */
+var SHOP = [
+  {id:'potion', n:'薬草', ic:'🌿', price:25,
+   desc:'冒険中、HPが' + '40' + '%を下回ると自動でつかう。持てるのは1つまで。'}
+];
+var SLOTN = {w:'ぶき', s:'たて', a:'ぼうぐ'};
+var SLOTIC = {w:'⚔️', s:'🛡️', a:'🥋'};
+
+function gearById(id){
+  for (var k in GEAR) for (var i=0;i<GEAR[k].length;i++) if (GEAR[k][i].id===id) return {slot:k, def:GEAR[k][i]};
+  return null;
+}
+function gearByTier(slot, tiers){
+  var pool = GEAR[slot].filter(function(g){ return tiers.indexOf(g.t) >= 0; });
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+
+/* ---- モンスター（強さはステージ共通） ---- */
+var MON = [
+  {id:'slime', n:'スライム',       ic:'🫧', t:1, hp:12, atk:3,  def:0, exp:4},
+  {id:'bat',   n:'こうもり',       ic:'🦇', t:1, hp:10, atk:4,  def:0, exp:5},
+  {id:'rat',   n:'野ネズミ',       ic:'🐀', t:1, hp:9,  atk:4,  def:1, exp:5},
+  {id:'mush',  n:'きのこ坊や',     ic:'🍄', t:1, hp:14, atk:3,  def:1, exp:6},
+  {id:'gob',   n:'ゴブリン',       ic:'👺', t:2, hp:22, atk:8,  def:2, exp:14},
+  {id:'ant',   n:'大アリ',         ic:'🐜', t:2, hp:18, atk:9,  def:1, exp:13},
+  {id:'armr',  n:'さまようヨロイ', ic:'🪖', t:2, hp:26, atk:7,  def:4, exp:17},
+  {id:'spdr',  n:'毒グモ',         ic:'🕷️', t:2, hp:20, atk:10, def:1, exp:15},
+  {id:'ogre',  n:'オーガ',         ic:'👹', t:3, hp:40, atk:14, def:3, exp:30},
+  {id:'wyv',   n:'ワイバーン',     ic:'🐉', t:3, hp:34, atk:16, def:2, exp:32},
+  {id:'lich',  n:'リッチ',         ic:'💀', t:3, hp:30, atk:15, def:5, exp:34},
+  {id:'golm',  n:'ゴーレム',       ic:'🗿', t:3, hp:50, atk:12, def:7, exp:36}
+];
+function monByTier(t){
+  var pool = MON.filter(function(m){ return m.t===t; });
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* ---- ステージ ---- */
+var STAGES = [
+  {
+    id:'plain', n:'はじまりの草原', ic:'🌿', lv:1, min:5,
+    desc:'なだらかな丘がつづく、旅のはじめの道。装備がなくても歩ける。',
+    enc:0.11, mix:[0.90,0.10,0.00],
+    mid:{n:'キングスライム', ic:'👑', hp:60,  atk:9,  def:2, exp:45},
+    big:{n:'ぬしガエル',     ic:'🐸', hp:110, atk:13, def:4, exp:110, chance:0.10},
+    drop:[0,1]
+  },
+  {
+    id:'forest', n:'ささやきの森', ic:'🌲', lv:2, min:10,
+    desc:'木々がざわめく深い森。装備を整えてから入りたい。',
+    enc:0.13, mix:[0.35,0.55,0.10],
+    mid:{n:'山賊頭ガルド',   ic:'🪓', hp:120, atk:17, def:5, exp:140},
+    big:{n:'双頭のオーガ',   ic:'👹', hp:220, atk:24, def:8, exp:320, chance:0.25},
+    drop:[1,2]
+  },
+  {
+    id:'gorge', n:'凍てつく峡谷', ic:'🏔️', lv:3, min:15,
+    desc:'吹雪の底から唸り声がきこえる。生半可な装備では帰れない。',
+    enc:0.15, mix:[0.10,0.40,0.50],
+    mid:{n:'氷の魔女リーゼ', ic:'❄️', hp:200, atk:25, def:8, exp:380},
+    big:{n:'古竜ヴァルグ',   ic:'🐲', hp:330, atk:31, def:12, exp:900, chance:0.40},
+    drop:[2,3]
+  }
+];
+function stageById(id){ for (var i=0;i<STAGES.length;i++) if (STAGES[i].id===id) return STAGES[i]; return STAGES[0]; }
+
+/* =====================================================================
+   純粋ロジック（画面に依存しない＝シミュレーションで検証できる）
+   ===================================================================== */
+function rnd(a,b){ return a + Math.random()*(b-a); }
+
+function setMultiplier(eq){
+  var cnt = {};
+  ['w','s','a'].forEach(function(k){
+    var g = eq[k];
+    if (g && g.s !== 'none') cnt[g.s] = (cnt[g.s]||0) + 1;
+  });
+  var bestS = null, best = 0;
+  for (var s in cnt) if (cnt[s] > best){ best = cnt[s]; bestS = s; }
+  if (best >= 3) return { m: (bestS==='cook' ? BAL.cookMul3 : BAL.setMul3), s:bestS, c:3 };
+  if (best === 2) return { m: BAL.setMul2, s:bestS, c:2 };
+  return { m:1, s:null, c:best };
+}
+function stats(p){
+  var baseAtk = BAL.baseAtk + BAL.atkPerLv * (p.lv - 1);
+  var w = p.equip.w ? p.equip.w.v : 0;
+  var d = (p.equip.s ? p.equip.s.v : 0) + (p.equip.a ? p.equip.a.v : 0);
+  var sm = setMultiplier(p.equip);
+  return {
+    atk: Math.round((baseAtk + w) * sm.m),
+    def: Math.round(d * sm.m),
+    maxHp: BAL.baseHp + BAL.hpPerLv * (p.lv - 1),
+    set: sm
+  };
+}
+function dmg(atk, def){ return Math.max(1, Math.round(atk * rnd(0.85, 1.15)) - def); }
+
+function makeRun(stage, startHpRatio){
+  var total = Math.round(stage.min * 60 / BAL.tickSeconds);
+  return {
+    stageId: stage.id, totalTicks: total, tick: 0,
+    phase:'travel', enemy:null, turn:'p',
+    midDone:false, bigDone:false, bigQueued:false,
+    killed:0, expGot:0, chests:0, fairyGot:null, gearGot:0,
+    loot:[], potionsUsed:0, startHpRatio: startHpRatio || 1,
+    result:null, startedAt: Date.now()
+  };
+}
+function spawn(stage){
+  var r = Math.random(), tier = 1, mx = stage.mix;
+  if (r < mx[0]) tier = 1; else if (r < mx[0]+mx[1]) tier = 2; else tier = 3;
+  var m = monByTier(tier);
+  var isVar = Math.random() < BAL.variantChance;
+  return {
+    n: isVar ? '《亜種》' + m.n : m.n, ic: m.ic,
+    hp: m.hp, maxHp: m.hp,
+    atk: isVar ? Math.round(m.atk * BAL.variantAtkMul) : m.atk,
+    def: m.def, exp: m.exp, isVar: isVar, kind:'mob'
+  };
+}
+function bossOf(b, kind){
+  return { n:b.n, ic:b.ic, hp:b.hp, maxHp:b.hp, atk:b.atk, def:b.def, exp:b.exp, isVar:false, kind:kind };
+}
+
+/* 1ターン進める。発生した出来事を配列で返す */
+function step(run, p, st){
+  var ev = [], stage = stageById(run.stageId);
+  run.tick++;
+
+  /* 中ボス出現 */
+  if (!run.midDone && run.phase === 'travel' && run.tick >= Math.floor(run.totalTicks * BAL.bossAt)){
+    run.enemy = bossOf(stage.mid, 'mid');
+    run.phase = 'battle'; run.turn = 'p';
+    ev.push({k:'boss', m:'【中ボス】' + stage.mid.ic + ' ' + stage.mid.n + ' が立ちはだかった！'});
+    return ev;
+  }
+
+  if (run.phase === 'travel'){
+    /* 自然回復 */
+    if (p.hp < st.maxHp){
+      p._regen = (p._regen || 0) + BAL.regenPerTick;
+      while (p._regen >= 1 && p.hp < st.maxHp){ p.hp++; p._regen--; }
+    }
+    /* 宝箱 */
+    var chestP = BAL.chestPer10min / (600 / BAL.tickSeconds);
+    if (Math.random() < chestP){
+      run.chests++;
+      /* 装備の上限に達していたら中身は薬草あつかい（上限は画面に出さない） */
+      var wantGear = Math.random() >= BAL.chestPotionRate && run.gearGot < BAL.gearPerRun;
+      if (!wantGear){
+        if (!p.item){ p.item = 'potion'; ev.push({k:'get', m:'宝箱から 🌿薬草 をゲットしました'}); }
+        else ev.push({k:'get', m:'宝箱を見つけたが、薬草はもう持っている（持てるのは1つまで）'});
+      } else {
+        var slot = ['w','s','a'][Math.floor(Math.random()*3)];
+        var g = gearByTier(slot, [0,1]);
+        if (g){
+          run.loot.push({slot:slot, id:g.id}); run.gearGot++;
+          ev.push({k:'get', m:'宝箱から ' + g.ic + g.n + '（' + SLOTN[slot] + ' +' + g.v + '）をゲットしました'});
+        }
+      }
+    }
+    /* 遭遇 */
+    if (Math.random() < stage.enc){
+      run.enemy = spawn(stage); run.phase='battle'; run.turn='p';
+      ev.push({k:'enc', m:run.enemy.ic + ' ' + run.enemy.n + ' と出会いました'});
+    }
+    return ev;
+  }
+
+  /* ---- 戦闘 ---- */
+  var e = run.enemy;
+  if (run.turn === 'p'){
+    var d = dmg(st.atk, e.def);
+    e.hp -= d;
+    if (e.hp <= 0){
+      ev.push({k:'kill', m:e.n + 'に ' + d + ' ダメージを与えました　' + e.n + 'を倒しました'});
+      run.killed++; run.expGot += e.exp; p.exp += e.exp;
+      ev.push({k:'get', m:'経験値 ' + e.exp + ' を手に入れた'});
+      /* レベルアップ */
+      while (p.exp >= expToNext(p.lv)){
+        p.exp -= expToNext(p.lv); p.lv++;
+        var ns = stats(p);
+        if (BAL.healOnLevelUp) p.hp = ns.maxHp;
+        ev.push({k:'lvup', m:'★ レベルが ' + p.lv + ' に上がった！（HP ' + ns.maxHp + ' / こうげき ' + ns.atk + '）'});
+      }
+      /* ボス報酬 */
+      if (e.kind === 'mid' || e.kind === 'big'){
+        var slot2 = ['w','s','a'][Math.floor(Math.random()*3)];
+        var g2 = run.gearGot < BAL.gearPerRun ? gearByTier(slot2, stage.drop) : null;
+        if (g2){
+          run.loot.push({slot:slot2, id:g2.id}); run.gearGot++;
+          ev.push({k:'get', m:'討伐の宝 ' + g2.ic + g2.n + '（' + SLOTN[slot2] + ' +' + g2.v + '）を手に入れた'});
+        }
+        if (e.kind === 'mid'){
+          run.midDone = true;
+          if (Math.random() < stage.big.chance){
+            run.bigQueued = true;
+            ev.push({k:'boss', m:'…地鳴りがする。何かがこちらへ向かってくる。'});
+          }
+        } else { run.bigDone = true; }
+      }
+      run.enemy = null; run.phase = 'travel';
+      if (run.bigQueued && !run.bigDone){
+        run.bigQueued = false;
+        run.enemy = bossOf(stage.big, 'big'); run.phase='battle'; run.turn='p';
+        ev.push({k:'boss', m:'【大ボス】' + stage.big.ic + ' ' + stage.big.n + ' が姿を現した！！'});
+      }
+      return ev;
+    }
+    ev.push({k:'dmg', m:e.n + 'に ' + d + ' ダメージを与えました（のこりHP ' + e.hp + '）'});
+    run.turn = 'e';
+    return ev;
+  } else {
+    var d2 = dmg(e.atk, st.def);
+    p.hp -= d2;
+    ev.push({k:'hurt', m:e.n + 'から ' + d2 + ' ダメージを受けました（HP ' + Math.max(0,p.hp) + '）'});
+    /* 薬草の自動使用 */
+    if (p.hp > 0 && p.item === 'potion' && p.hp < st.maxHp * BAL.potionThreshold){
+      p.item = null; p.hp = Math.min(st.maxHp, p.hp + BAL.potionHeal); run.potionsUsed++;
+      ev.push({k:'get', m:'🌿薬草をつかった。HPが ' + p.hp + ' に回復した'});
+    }
+    if (p.hp <= 0){ p.hp = 0; run.result = 'defeat'; return ev; }
+    run.turn = 'p';
+    return ev;
+  }
+}
+
+/* 妖精（ステージ開始時に1度だけ抽選） */
+function rollFairy(p, run){
+  if (Math.random() >= BAL.fairyChance) return null;
+  var set = [{slot:'w',id:'w_fork'},{slot:'s',id:'s_lid'},{slot:'a',id:'a_apron'}];
+  var missing = set.filter(function(x){
+    var has = p.inv[x.slot].some(function(it){ return it.id === x.id; });
+    var eq = p.equip[x.slot] && p.equip[x.slot].id === x.id;
+    var lo = run.loot.some(function(l){ return l.id === x.id; });
+    return !has && !eq && !lo;
+  });
+  var pick = (missing.length ? missing : set)[Math.floor(Math.random() * (missing.length ? missing.length : set.length))];
+  run.loot.push({slot:pick.slot, id:pick.id});
+  run.gearGot++;            /* 妖精のぶんも1回の上限に数える */
+  run.fairyGot = pick.id;
+  return gearById(pick.id);
+}
+
+/* =====================================================================
+   シミュレーション用API（バランス検証に使用）
+   ===================================================================== */
+window.SIM = {
+  run: function(stageId, lv, gearIds, withPotion){
+    var p = { lv: lv||1, exp:0, hp:0, item: withPotion ? 'potion' : null,
+              equip:{w:null,s:null,a:null}, inv:{w:[],s:[],a:[]} };
+    (gearIds||[]).forEach(function(id){ var g = gearById(id); if (g) p.equip[g.slot] = g.def; });
+    var st = stats(p); p.hp = st.maxHp;
+    var stage = stageById(stageId);
+    var run = makeRun(stage, 1);
+    rollFairy(p, run);
+    while (run.tick < run.totalTicks && !run.result){
+      st = stats(p);
+      step(run, p, st);
+    }
+    if (!run.result) run.result = 'return';
+    return { result:run.result, killed:run.killed, exp:run.expGot, lv:p.lv,
+             hp:p.hp, maxHp:stats(p).maxHp, chests:run.chests, loot:run.loot.length,
+             midDone:run.midDone, bigDone:run.bigDone, potions:run.potionsUsed };
+  },
+  stats: stats, BAL: BAL, expToNext: expToNext, STAGES: STAGES, MON: MON, GEAR: GEAR
+};
+
+/* =====================================================================
+   セーブ
+   ===================================================================== */
+var SAVEKEY = 'idlequest.save.v1';
+var P = null, RUN = null, speed = 1, selStage = null, invTab = 'w', timer = null;
+
+function newPlayer(){
+  var id = 'PL-';
+  for (var i=0;i<8;i++) id += '0123456789ABCDEF'[Math.floor(Math.random()*16)];
+  return {
+    version:1, id:id, name:'冒険者', driveFileId:null,
+    lv:1, exp:0, hp:BAL.baseHp, item:null, gold:0,
+    equip:{w:null,s:null,a:null}, inv:{w:[],s:[],a:[]},
+    nextHpRatio:1, totalRuns:0, totalKills:0, totalGold:0, createdAt:Date.now()
+  };
+}
+function serialize(){
+  function g(x){ return x ? x.id : null; }
+  return {
+    version:1, id:P.id, name:P.name, driveFileId:P.driveFileId,
+    lv:P.lv, exp:P.exp, hp:P.hp, item:P.item, gold:P.gold, totalGold:P.totalGold,
+    equip:{w:g(P.equip.w), s:g(P.equip.s), a:g(P.equip.a)},
+    inv:{ w:P.inv.w.map(function(x){return x.id;}), s:P.inv.s.map(function(x){return x.id;}), a:P.inv.a.map(function(x){return x.id;}) },
+    nextHpRatio:P.nextHpRatio, totalRuns:P.totalRuns, totalKills:P.totalKills,
+    createdAt:P.createdAt, savedAt:Date.now(),
+    run: RUN ? RUN : null
+  };
+}
+function deserialize(d){
+  var p = newPlayer();
+  p.id = d.id || p.id; p.name = d.name || p.name; p.driveFileId = d.driveFileId || null;
+  p.lv = d.lv||1; p.exp = d.exp||0; p.item = d.item||null;
+  p.gold = d.gold||0; p.totalGold = d.totalGold||0;
+  p.nextHpRatio = (typeof d.nextHpRatio==='number') ? d.nextHpRatio : 1;
+  p.totalRuns = d.totalRuns||0; p.totalKills = d.totalKills||0; p.createdAt = d.createdAt||Date.now();
+  ['w','s','a'].forEach(function(k){
+    p.equip[k] = d.equip && d.equip[k] ? (gearById(d.equip[k])||{}).def || null : null;
+    p.inv[k] = ((d.inv && d.inv[k]) || []).map(function(id){ var g = gearById(id); return g ? g.def : null; }).filter(Boolean);
+  });
+  p.hp = (typeof d.hp==='number') ? d.hp : stats(p).maxHp;
+  return { p:p, run:d.run||null };
+}
+function save(){
+  try { localStorage.setItem(SAVEKEY, JSON.stringify(serialize())); } catch(e){}
+}
+function load(){
+  try {
+    var raw = localStorage.getItem(SAVEKEY);
+    if (!raw) return false;
+    var d = JSON.parse(raw);
+    var r = deserialize(d);
+    P = r.p; RUN = r.run;
+    return true;
+  } catch(e){ return false; }
+}
+
+/* =====================================================================
+   画面
+   ===================================================================== */
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; }); }
+function hhmmss(d){
+  function z(n){ return (n<10?'0':'') + n; }
+  return z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds());
+}
+function mmss(sec){
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec/60) + ':' + (sec%60<10?'0':'') + (sec%60);
+}
+
+function serTag(g){
+  var s = SERIES[g.s];
+  return '<span class="ser ' + s.c + '">' + s.n + '</span>';
+}
+
+/* もちものを「強い順」に並べ、装備中・重複の印をつける。
+   .i は P.inv[slot] 内のもとの位置（売買で使う） */
+function invSorted(slot, inv){
+  var list = inv || P.inv[slot];
+  var cnt = {};
+  list.forEach(function(g){ cnt[g.id] = (cnt[g.id] || 0) + 1; });
+  var eq = P.equip[slot];
+  /* 同じ物が複数あるときは、実際に身に着けている1つだけを「装備中」にする */
+  var eqAt = -1;
+  if (eq) for (var k = 0; k < list.length; k++) if (list[k].id === eq.id){ eqAt = k; break; }
+  return list.map(function(g, i){
+    var isEq = (i === eqAt);
+    return { g:g, i:i, eq: isEq, dup: cnt[g.id] > 1 && !isEq };
+  }).sort(function(a, b){
+    return (b.g.v - a.g.v) || (b.g.p - a.g.p) || a.g.n.localeCompare(b.g.n, 'ja');
+  });
+}
+function badges(r){
+  return (r.eq ? '<span class="bdg eq">装備中</span>' : '') +
+         (r.dup ? '<span class="bdg dup">重複</span>' : '');
+}
+
+function renderPrep(){
+  var st = stats(P);
+  if (P.hp > st.maxHp) P.hp = st.maxHp;
+  $('pname').textContent = P.name;
+  $('pid').textContent = P.id;
+  $('plv').textContent = P.lv;
+  $('php').textContent = P.hp + ' / ' + st.maxHp;
+  $('phpbar').style.width = (P.hp/st.maxHp*100) + '%';
+  $('phpbar').parentNode.classList.toggle('low', P.hp/st.maxHp < .35);
+  var need = expToNext(P.lv);
+  $('pexp').textContent = P.exp; $('pexpn').textContent = need;
+  $('pexpbar').style.width = Math.min(100, P.exp/need*100) + '%';
+  $('patk').textContent = st.atk; $('pdef').textContent = st.def;
+  $('pgold').textContent = P.gold + ' G';
+  $('pgold2').textContent = P.gold;
+  $('pmul').innerHTML = st.set.c >= 2
+    ? '✦ ' + SERIES[st.set.s].n + 'セット ' + st.set.c + 'つ揃い　能力 ×' + st.set.m
+    : '<span style="color:#525c74">同じ系統を2つ揃えると ×1.25</span>';
+
+  /* 装備スロット */
+  var h = '';
+  ['w','s','a'].forEach(function(k){
+    var g = P.equip[k], n = P.inv[k].length;
+    h += '<div class="slot pick' + (g?' filled':'') + '" data-slot="' + k + '">' +
+         '<div class="lab">' + SLOTIC[k] + ' ' + SLOTN[k] + '</div>' +
+         (g ? '<div class="ic">' + g.ic + '</div><div class="nm">' + esc(g.n) + '</div><div class="vl">+' + g.v + '</div><div>' + serTag(g) + '</div>'
+            : '<div class="empty">なし</div>') +
+         '<div class="tap">' + (n ? 'クリックで選ぶ（' + n + '）' : '持っていない') + '</div>' +
+         '</div>';
+  });
+  h += '<div class="slot pick' + (P.item?' filled':'') + '" data-slot="i">' +
+       '<div class="lab">🧪 アイテム</div>' +
+       (P.item ? '<div class="ic">🌿</div><div class="nm">薬草</div><div class="vl">HP+' + BAL.potionHeal + '</div>'
+               : '<div class="empty">なし</div>') +
+       '<div class="tap">' + (P.item ? '冒険中に自動でつかう' : '売店で買える') + '</div>' +
+       '</div>';
+  $('slots').innerHTML = h;
+
+  /* もちもの */
+  ['w','s','a'].forEach(function(k){ $('c'+k).textContent = '(' + P.inv[k].length + '/' + BAL.invMax + ')'; });
+  $('ci').textContent = '(' + (P.item ? 1 : 0) + '/1)';
+
+  if (invTab === 'i'){
+    $('invlist').innerHTML = P.item
+      ? '<div class="item"><span class="ic">🌿</span>' +
+        '<span class="nm">薬草<span class="shopdesc">冒険中、HPが' + Math.round(BAL.potionThreshold*100) + '%を下回ると自動でつかう</span></span>' +
+        '<span class="vl">HP+' + BAL.potionHeal + '</span></div>'
+      : '<div class="empty-msg">アイテムを持っていません。売店で買えます。</div>';
+  } else {
+    var rows = invSorted(invTab);
+    if (!rows.length) $('invlist').innerHTML = '<div class="empty-msg">まだ持っていません。ボスや宝箱から手に入ります。</div>';
+    else $('invlist').innerHTML = rows.map(function(r){
+      return '<div class="item' + (r.eq?' isEq':'') + '">' +
+        '<span class="ic">' + r.g.ic + '</span>' +
+        '<span class="nm">' + esc(r.g.n) + ' ' + serTag(r.g) + badges(r) + '</span>' +
+        '<span class="vl">+' + r.g.v + '</span>' +
+        '<span class="btns">' +
+          '<button data-act="eq" data-i="' + r.i + '">' + (r.eq?'はずす':'そうび') + '</button>' +
+          '<button data-act="sell" data-i="' + r.i + '">売る <span class="price">+' + r.g.p + 'G</span></button>' +
+        '</span></div>';
+    }).join('');
+  }
+
+  /* 売店 */
+  $('shoplist').innerHTML = SHOP.map(function(s){
+    var have = !!P.item, afford = P.gold >= s.price;
+    var why = have ? '持ちもの満杯' : (afford ? '' : 'お金が足りない');
+    return '<div class="item">' +
+      '<span class="ic">' + s.ic + '</span>' +
+      '<span class="nm">' + s.n + '<span class="shopdesc">' + s.desc + '</span></span>' +
+      '<span class="price">' + s.price + ' G</span>' +
+      '<span class="btns"><button data-buy="' + s.id + '"' + (have||!afford ? ' disabled' : '') + '>' +
+      (why || 'かう') + '</button></span></div>';
+  }).join('');
+
+  /* ステージ */
+  $('stages').innerHTML = STAGES.map(function(s){
+    return '<button class="stage' + (selStage===s.id?' on':'') + '" data-st="' + s.id + '">' +
+      '<div class="top"><span class="ic">' + s.ic + '</span><span><span class="nm">' + s.n + '</span><br>' +
+      '<span class="lv">LEVEL ' + s.lv + ' ・ ' + s.min + '分で帰還</span></span></div>' +
+      '<div class="desc">' + s.desc + '</div>' +
+      '<div class="meta"><span>中ボス ' + s.mid.ic + ' ' + s.mid.n + '</span><span>大ボス ' + Math.round(s.big.chance*100) + '%</span></div>' +
+      '</button>';
+  }).join('');
+  $('btnGo').disabled = !selStage;
+}
+
+var logBuf = [];
+function pushLog(kind, msg, when){
+  var t = hhmmss(when || new Date());
+  logBuf.push({t:t, k:kind, m:msg});
+  if (logBuf.length > 400) logBuf.shift();
+}
+function renderLog(){
+  var el = $('log');
+  var atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  el.innerHTML = logBuf.map(function(l){
+    return '<div class="l"><span class="t">' + l.t + '</span><span class="m ' + l.k + '">' + l.m + '</span></div>';
+  }).join('');
+  if (atBottom) el.scrollTop = el.scrollHeight;
+}
+
+function renderAdv(){
+  if (!RUN) return;
+  var stage = stageById(RUN.stageId), st = stats(P);
+  $('aIc').textContent = stage.ic;
+  $('aNm').textContent = stage.n;
+  $('aSub').textContent = '所要 ' + stage.min + '分　/　LEVEL ' + stage.lv;
+  var elapsed = RUN.tick * BAL.tickSeconds, total = RUN.totalTicks * BAL.tickSeconds;
+  $('aElapsed').textContent = mmss(elapsed);
+  $('aTotal').textContent = mmss(total);
+  $('aTimebar').style.width = Math.min(100, RUN.tick/RUN.totalTicks*100) + '%';
+  $('aHp').textContent = Math.max(0,P.hp) + ' / ' + st.maxHp;
+  $('aHpbar').style.width = Math.max(0, P.hp/st.maxHp*100) + '%';
+  $('aHpbar').parentNode.classList.toggle('low', P.hp/st.maxHp < .35);
+  $('aLv').textContent = P.lv;
+  var need = expToNext(P.lv);
+  $('aExp').textContent = P.exp + ' / ' + need;
+  $('aExpbar').style.width = Math.min(100, P.exp/need*100) + '%';
+  $('aEq').innerHTML = ['w','s','a'].map(function(k){
+    var g = P.equip[k];
+    return SLOTIC[k] + ' ' + (g ? esc(g.n) + ' +' + g.v : '—');
+  }).join('　') + (st.set.c>=2 ? '　<span style="color:var(--gold)">✦×' + st.set.m + '</span>' : '');
+  $('aItem').innerHTML = P.item
+    ? '🧪 もちもの: <b style="color:var(--green)">🌿薬草</b>（HPが' + Math.round(BAL.potionThreshold*100) + '%未満で自動使用）'
+    : '<span style="color:#525c74">🧪 もちもの: なし</span>';
+
+  var e = RUN.enemy;
+  if (e){
+    var tag = e.kind==='mid' ? '<span class="tag boss">中ボス</span>' :
+              e.kind==='big' ? '<span class="tag big">大ボス</span>' :
+              e.isVar ? '<span class="tag var">亜種</span>' : '';
+    $('aEnemy').className = 'enemy';
+    $('aEnemy').innerHTML =
+      '<span class="ic">' + e.ic + '</span>' +
+      '<span class="side"><span class="nm">' + esc(e.n) + '</span>' + tag +
+      '<div class="bar hp" style="margin-top:6px;"><i style="width:' + Math.max(0,e.hp/e.maxHp*100) + '%"></i></div>' +
+      '<div class="kv" style="margin-top:3px;"><span>こうげき ' + e.atk + ' / ぼうぎょ ' + e.def + '</span><b>' + Math.max(0,e.hp) + ' / ' + e.maxHp + '</b></div>' +
+      '</span>';
+  } else {
+    $('aEnemy').className = 'enemy idle';
+    $('aEnemy').textContent = '道を進んでいる…';
+  }
+}
+
+/* =====================================================================
+   モーダル
+   ===================================================================== */
+function modal(html, onReady){
+  $('modalBox').innerHTML = html;
+  $('modal').classList.remove('hide');
+  if (onReady) onReady($('modalBox'));
+}
+function closeModal(){ $('modal').classList.add('hide'); }
+
+/* =====================================================================
+   冒険の進行
+   ===================================================================== */
+function startRun(){
+  var stage = stageById(selStage);
+  var st = stats(P);
+  var ratio = P.nextHpRatio;
+  var begin = function(){
+    closeModal();
+    P.hp = Math.max(1, Math.round(st.maxHp * ratio));
+    P.nextHpRatio = 1;
+    P._regen = 0;
+    RUN = makeRun(stage, ratio);
+    logBuf = [];
+    pushLog('sys', '——— ' + stage.ic + ' ' + stage.n + ' へ出発しました（所要 ' + stage.min + '分）———');
+    if (ratio < 1) pushLog('sys', '前回の傷が残っている。HP ' + P.hp + ' / ' + st.maxHp + ' でのスタート。');
+    var f = rollFairy(P, RUN);
+    if (f) pushLog('fairy', '🧚 妖精に出会った！　「これ、使ってみて」' + f.def.ic + f.def.n + '（' + SLOTN[f.slot] + ' +' + f.def.v + '）をもらった');
+    P.totalRuns++;
+    $('scPrep').classList.add('hide');
+    $('scAdv').classList.remove('hide');
+    renderAdv(); renderLog(); save();
+    startTimer();
+  };
+  if (ratio < 1){
+    modal(
+      '<h3>⚠ 体力が回復しきっていません</h3>' +
+      '<p>前回の冒険で力尽きたため、<b>HP ' + Math.round(ratio*100) + '%（' + Math.round(st.maxHp*ratio) + ' / ' + st.maxHp + '）</b>の状態で出発することになります。<br>このまま出発しますか？</p>' +
+      '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="primary">出発する</button></div>',
+      function(box){
+        box.querySelector('#mNo').onclick = closeModal;
+        box.querySelector('#mYes').onclick = begin;
+      }
+    );
+  } else begin();
+}
+
+function startTimer(){
+  stopTimer();
+  timer = setInterval(tickLoop, 100);
+}
+function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
+
+var acc = 0, lastNow = Date.now();
+function tickLoop(){
+  if (!RUN || RUN.result) return;
+  var now = Date.now();
+  var dt = (now - lastNow) / 1000;
+  lastNow = now;
+  if (dt > 60) dt = 60;              // 復帰時の暴走防止
+  acc += dt * speed;
+  var budget = 0;
+  while (acc >= BAL.tickSeconds && !RUN.result && RUN.tick < RUN.totalTicks && budget < 400){
+    acc -= BAL.tickSeconds;
+    budget++;
+    var st = stats(P);
+    var ev = step(RUN, P, st);
+    var when = new Date(RUN.startedAt + RUN.tick * BAL.tickSeconds * 1000);
+    for (var i=0;i<ev.length;i++) pushLog(ev[i].k, ev[i].m, when);
+  }
+  if (RUN.result === 'defeat'){ finish('defeat'); return; }
+  if (RUN.tick >= RUN.totalTicks){ finish('return'); return; }
+  renderAdv(); renderLog();
+  if (RUN.tick % 10 === 0) save();
+}
+
+function finish(kind){
+  stopTimer();
+  var stage = stageById(RUN.stageId), st = stats(P);
+  if (kind === 'defeat'){
+    pushLog('hurt', '✖ 力つきた…　仲間の商隊に拾われ、町まで運ばれた。');
+    P.nextHpRatio = BAL.reviveHp;
+    P.hp = Math.max(1, Math.round(st.maxHp * BAL.reviveHp));
+  } else {
+    pushLog('sys', '——— ' + stage.n + ' から無事に帰還しました ———');
+    P.nextHpRatio = 1;
+  }
+  P.totalKills += RUN.killed;
+  renderLog(); renderAdv();
+
+  /* 戦利品をもちものへ */
+  var gained = RUN.loot.map(function(l){ var g = gearById(l.id); return g ? g : null; }).filter(Boolean);
+  var overflow = [], autoSold = [], autoGold = 0;
+  gained.forEach(function(g){
+    if (P.inv[g.slot].length < BAL.invMax){ P.inv[g.slot].push(g.def); return; }
+    /* すでに同じ物を持っていて枠も満杯なら、聞かずにその場で売る */
+    var dup = P.inv[g.slot].some(function(x){ return x.id === g.def.id; }) ||
+              (P.equip[g.slot] && P.equip[g.slot].id === g.def.id);
+    if (dup){ autoSold.push(g); autoGold += g.def.p; } else overflow.push(g);
+  });
+  if (autoGold){ P.gold += autoGold; P.totalGold += autoGold; }
+
+  var summary =
+    '<h3>' + (kind==='defeat' ? '✖ 強制帰還' : '🏳 帰還しました') + '</h3>' +
+    '<p>' + stage.ic + ' ' + stage.n + (kind==='defeat'
+      ? '　体力が尽きたため、途中で運び出されました。次の出発は <b>HP ' + Math.round(BAL.reviveHp*100) + '%</b> からになります。'
+      : '　予定どおり ' + stage.min + '分の行程を踏破しました。') + '</p>' +
+    '<div class="res">' +
+      '<div><span>たおした数</span><b>' + RUN.killed + '</b></div>' +
+      '<div><span>かくとく経験値</span><b>' + RUN.expGot + '</b></div>' +
+      '<div><span>いまのレベル</span><b>' + P.lv + '</b></div>' +
+      '<div><span>宝箱</span><b>' + RUN.chests + '</b></div>' +
+    '</div>' +
+    '<p style="font-size:12px;">しょじきん: <b class="gold">' + P.gold + ' G</b></p>' +
+    (RUN.midDone ? '<p style="color:var(--green);font-size:12px;">✔ ' + stage.mid.n + ' を撃破</p>' : '<p style="color:var(--dim);font-size:12px;">中ボスには届きませんでした</p>') +
+    (RUN.bigDone ? '<p style="color:var(--purple);font-size:12px;">✔✔ 大ボス ' + stage.big.n + ' を撃破！</p>' : '') +
+    (gained.length ? '<p style="font-size:12px;">入手: ' + gained.map(function(g){ return g.def.ic + g.def.n; }).join('、') + '</p>' : '') +
+    (autoSold.length ? '<p style="font-size:11.5px;color:var(--dim);">持ちきれないので道中で売った（同じ物を所持済み）: ' + autoSold.map(function(g){ return g.def.ic + g.def.n; }).join('、') + ' → <span class="gold">+' + autoGold + ' G</span></p>' : '') +
+    '<div class="acts"><button id="mOk" class="primary">もどる</button></div>';
+
+  modal(summary, function(box){
+    box.querySelector('#mOk').onclick = function(){
+      RUN = null; acc = 0;
+      $('scAdv').classList.add('hide');
+      $('scPrep').classList.remove('hide');
+      renderPrep(); save();
+      if (overflow.length) askDiscard(overflow, 0);
+      else closeModal();
+    };
+  });
+}
+
+/* そうびスロットから選ぶ */
+function openPicker(slot){
+  if (slot === 'i'){
+    invTab = 'i';
+    Array.prototype.forEach.call($('invtabs').children, function(x){ x.classList.toggle('on', x.dataset.k === 'i'); });
+    renderPrep();
+    $('shoplist').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  var rows = invSorted(slot), eq = P.equip[slot];
+  modal(
+    '<h3>' + SLOTIC[slot] + ' ' + SLOTN[slot] + ' をえらぶ</h3>' +
+    '<p>強い順にならんでいます。' + (eq ? '今は <b>' + eq.ic + esc(eq.n) + '（+' + eq.v + '）</b> を装備中です。' : '今は何も装備していません。') + '</p>' +
+    (rows.length
+      ? '<div class="invlist">' + rows.map(function(r){
+          return '<div class="item' + (r.eq?' isEq':'') + '">' +
+            '<span class="ic">' + r.g.ic + '</span>' +
+            '<span class="nm">' + esc(r.g.n) + ' ' + serTag(r.g) + badges(r) + '</span>' +
+            '<span class="vl">+' + r.g.v + '</span>' +
+            '<span class="btns"><button data-i="' + r.i + '"' + (r.eq ? ' disabled' : '') + '>' +
+            (r.eq ? '装備中' : 'これにする') + '</button></span></div>';
+        }).join('') + '</div>'
+      : '<div class="empty-msg">まだ持っていません。ボスや宝箱から手に入ります。</div>') +
+    '<div class="acts">' +
+      (eq ? '<button id="mOff" class="ghost">はずす</button>' : '') +
+      '<button id="mClose" class="primary">とじる</button></div>',
+    function(box){
+      box.querySelectorAll('.invlist button[data-i]').forEach(function(b){
+        if (b.disabled) return;
+        b.onclick = function(){
+          P.equip[slot] = P.inv[slot][+b.dataset.i];
+          closeModal(); renderPrep(); save();
+        };
+      });
+      var off = box.querySelector('#mOff');
+      if (off) off.onclick = function(){ P.equip[slot] = null; closeModal(); renderPrep(); save(); };
+      box.querySelector('#mClose').onclick = closeModal;
+    }
+  );
+}
+
+/* もちものがあふれた時 — 捨てずに売る */
+function sellGear(def){ P.gold += def.p; P.totalGold += def.p; }
+
+/* もちものから1つ取り除く。
+   同じ装備を複数持っている場合、1つ売っても手元に残っていれば装備は外さない。
+   最後の1つを手放したときだけ装備が外れる。 */
+function removeFromInv(slot, index, sell){
+  var list = P.inv[slot];
+  if (index < 0 || index >= list.length) return null;
+  var removed = list.splice(index, 1)[0];
+  if (sell) sellGear(removed);
+  if (P.equip[slot] && P.equip[slot].id === removed.id){
+    var stillHave = list.some(function(x){ return x.id === removed.id; });
+    if (!stillHave) P.equip[slot] = null;
+  }
+  return removed;
+}
+
+function askDiscard(list, i){
+  if (i >= list.length){ closeModal(); renderPrep(); save(); return; }
+  var g = list[i], slot = g.slot, cur = P.inv[slot];
+  modal(
+    '<h3>もちものがいっぱいです</h3>' +
+    '<p>' + SLOTIC[slot] + ' ' + SLOTN[slot] + ' は ' + BAL.invMax + ' 個までしか持てません。<br>' +
+    '新しく手に入れた <b>' + g.def.ic + esc(g.def.n) + '（+' + g.def.v + '）</b> を持ち帰るには、どれかを売る必要があります。<br>' +
+    '<span style="color:var(--dim);font-size:12px;">強い順にならんでいます。売ったぶんは、しょじきん（現在 <span class="gold">' + P.gold + ' G</span>）になります。</span></p>' +
+    '<div class="invlist">' + invSorted(slot, cur).map(function(r){
+      return '<div class="item' + (r.eq?' isEq':'') + '"><span class="ic">' + r.g.ic + '</span>' +
+             '<span class="nm">' + esc(r.g.n) + ' ' + serTag(r.g) + badges(r) + '</span>' +
+             '<span class="vl">+' + r.g.v + '</span><span class="btns"><button data-j="' + r.i + '"' +
+             (r.eq ? ' class="danger"' : '') + '>' + (r.eq ? '装備中だが売る' : 'これを売る') +
+             ' <span class="price">+' + r.g.p + 'G</span></button></span></div>';
+    }).join('') + '</div>' +
+    '<div class="acts"><button id="mDrop" class="ghost">新しい方を売る（+' + g.def.p + 'G）</button></div>',
+    function(box){
+      box.querySelectorAll('button[data-j]').forEach(function(b){
+        b.onclick = function(){
+          removeFromInv(slot, +b.dataset.j, true);
+          P.inv[slot].push(g.def);
+          askDiscard(list, i+1);
+        };
+      });
+      box.querySelector('#mDrop').onclick = function(){ sellGear(g.def); askDiscard(list, i+1); };
+    }
+  );
+}
+
+/* =====================================================================
+   イベント
+   ===================================================================== */
+$('slots').addEventListener('click', function(e){
+  var s = e.target.closest('.slot[data-slot]'); if (!s) return;
+  openPicker(s.dataset.slot);
+});
+$('stages').addEventListener('click', function(e){
+  var b = e.target.closest('.stage'); if (!b) return;
+  selStage = b.dataset.st; renderPrep();
+});
+$('btnGo').addEventListener('click', startRun);
+$('invtabs').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  invTab = b.dataset.k;
+  Array.prototype.forEach.call($('invtabs').children, function(x){ x.classList.toggle('on', x===b); });
+  renderPrep();
+});
+$('invlist').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  var i = +b.dataset.i, g = P.inv[invTab][i];
+  if (!g) return;
+  if (b.dataset.act === 'eq'){
+    P.equip[invTab] = (P.equip[invTab] && P.equip[invTab].id === g.id) ? null : g;
+  } else {
+    removeFromInv(invTab, i, true);
+  }
+  renderPrep(); save();
+});
+$('shoplist').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-buy]'); if (!b || b.disabled) return;
+  var s = SHOP.filter(function(x){ return x.id === b.dataset.buy; })[0];
+  if (!s || P.gold < s.price || P.item) return;
+  P.gold -= s.price; P.item = s.id;
+  renderPrep(); save();
+});
+$('btnAbort').addEventListener('click', function(){
+  modal('<h3>冒険を中断しますか？</h3><p>今回の戦利品と経験値はそのまま残りますが、行程は途中で終わります。</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">つづける</button><button id="mYes" class="primary">中断する</button></div>',
+    function(box){
+      box.querySelector('#mNo').onclick = closeModal;
+      box.querySelector('#mYes').onclick = function(){ closeModal(); finish('return'); };
+    });
+});
+document.querySelectorAll('.speed').forEach(function(sp){
+  sp.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    speed = +b.dataset.sp;
+    document.querySelectorAll('.speed button').forEach(function(x){ x.classList.toggle('on', +x.dataset.sp === speed); });
+  });
+});
+$('btnName').addEventListener('click', function(){
+  modal('<h3>名前をかえる</h3><p>セーブデータに記録されます（ID: <code>' + P.id + '</code>）。</p>' +
+    '<input type="text" id="mIn" maxlength="16" value="' + esc(P.name) + '">' +
+    '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="primary">決定</button></div>',
+    function(box){
+      var inp = box.querySelector('#mIn'); inp.focus(); inp.select();
+      box.querySelector('#mNo').onclick = closeModal;
+      box.querySelector('#mYes').onclick = function(){
+        P.name = (inp.value || '冒険者').trim().slice(0,16) || '冒険者';
+        closeModal(); renderPrep(); save();
+      };
+    });
+});
+/* ファイル保存の経路。Web公開版では claude.use("downloads")、
+   HTMLを直接開いた場合は通常のダウンロードを使う */
+var dlPromise = null;
+function getDownloads(){
+  if (dlPromise) return dlPromise;
+  if (!(window.claude && typeof window.claude.use === 'function')){
+    dlPromise = Promise.resolve(null);
+  } else {
+    try { dlPromise = window.claude.use('downloads').then(function(d){ return d; }, function(){ return null; }); }
+    catch(e){ dlPromise = Promise.resolve(null); }
+  }
+  return dlPromise;
+}
+try { getDownloads(); } catch(e){}
+
+function saveToFile(msgEl){
+  var json = JSON.stringify(serialize(), null, 2);
+  var name = 'idlequest_' + P.id + '.json';
+  msgEl.textContent = '保存の準備をしています…';
+  getDownloads().then(function(dl){
+    if (dl && dl.save){
+      dl.save({filename:name, data:json}).then(function(){
+        msgEl.textContent = '保存しました。';
+      }, function(err){
+        var c = err && err.code;
+        msgEl.textContent = (c === 'declined') ? '保存をとりやめました。'
+          : (c === 'rate_limited') ? '少し待ってからもう一度おしてください。'
+          : 'この環境ではファイル保存ができません。「コピー」をお使いください。';
+      });
+      return;
+    }
+    try{
+      var blob = new Blob([json], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      msgEl.textContent = '保存先にGoogleドライブのフォルダを選べます。ダウンロードが始まらない環境では「コピー」をお使いください。';
+    }catch(e){ msgEl.textContent = 'この環境ではファイル保存ができません。「コピー」をお使いください。'; }
+  });
+}
+
+function applyImport(text){
+  try{
+    var d = JSON.parse(text);
+    if (!d || typeof d !== 'object' || !d.id) throw new Error('bad');
+    var r = deserialize(d);
+    P = r.p; RUN = null; stopTimer();
+    $('scAdv').classList.add('hide'); $('scPrep').classList.remove('hide');
+    renderPrep(); save();
+    modal('<h3>読み込みました</h3><p><b>' + esc(P.name) + '</b>（' + P.id + '）　レベル ' + P.lv +
+          '　しょじきん <span class="gold">' + P.gold + ' G</span></p>' +
+          '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
+      function(box){ box.querySelector('#mOk').onclick = closeModal; });
+  }catch(err){
+    modal('<h3>読み込めませんでした</h3><p>セーブデータの形式が違うようです。書き出したときの文字が、途中で切れていないか確かめてください。</p>' +
+          '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
+      function(box){ box.querySelector('#mOk').onclick = closeModal; });
+  }
+}
+$('btnExport').addEventListener('click', function(){
+  var data = JSON.stringify(serialize());
+  modal(
+    '<h3>セーブの書き出し</h3>' +
+    '<p>下の文字がセーブデータです。コピーしてGoogleドライブのメモやメールに貼っておけば、別の端末やブラウザの「読み込み」から続きを遊べます。</p>' +
+    '<textarea id="mTa" readonly>' + esc(data) + '</textarea>' +
+    '<div class="acts"><button id="mFile" class="ghost">ファイルに保存</button><button id="mCopy" class="primary">コピー</button></div>' +
+    '<div class="note" id="mMsg"></div>',
+    function(box){
+      var ta = box.querySelector('#mTa'), msg = box.querySelector('#mMsg');
+      box.querySelector('#mCopy').onclick = function(){
+        try { ta.focus(); ta.select(); ta.setSelectionRange(0, 999999); } catch(e){}
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(data).then(
+            function(){ msg.textContent = 'コピーしました。'; },
+            function(){ msg.textContent = '自動でコピーできませんでした。上の文字を選んでコピーしてください。'; }
+          );
+        } else msg.textContent = '上の文字を選んでコピーしてください。';
+      };
+      box.querySelector('#mFile').onclick = function(){ saveToFile(msg); };
+    }
+  );
+});
+$('btnImport').addEventListener('click', function(){
+  modal(
+    '<h3>セーブの読み込み</h3>' +
+    '<p>書き出した文字を貼り付けるか、保存したファイルを選んでください。<b style="color:var(--red)">いまの進行度は上書きされます。</b></p>' +
+    '<textarea id="mTa" placeholder="ここにセーブデータを貼り付け"></textarea>' +
+    '<div class="acts"><button id="mFile" class="ghost">ファイルを選ぶ</button><button id="mGo" class="primary">読み込む</button></div>',
+    function(box){
+      box.querySelector('#mTa').focus();
+      box.querySelector('#mFile').onclick = function(){ $('fileIn').click(); };
+      box.querySelector('#mGo').onclick = function(){
+        var t = box.querySelector('#mTa').value.trim();
+        if (t) applyImport(t);
+      };
+    }
+  );
+});
+$('fileIn').addEventListener('change', function(e){
+  var f = e.target.files[0]; if (!f) return;
+  var fr = new FileReader();
+  fr.onload = function(){ applyImport(String(fr.result)); };
+  fr.readAsText(f);
+  e.target.value = '';
+});
+$('btnReset').addEventListener('click', function(){
+  modal('<h3>最初からやり直しますか？</h3><p>レベル・装備・もちものがすべて消えます。この操作は取り消せません。<br>先に「セーブ書き出し」でバックアップしておくと安心です。</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="danger">初期化する</button></div>',
+    function(box){
+      box.querySelector('#mNo').onclick = closeModal;
+      box.querySelector('#mYes').onclick = function(){
+        stopTimer(); P = newPlayer(); RUN = null; selStage = null; logBuf = [];
+        try{ localStorage.removeItem(SAVEKEY); }catch(e){}
+        $('scAdv').classList.add('hide'); $('scPrep').classList.remove('hide');
+        closeModal(); renderPrep(); save();
+      };
+    });
+});
+window.addEventListener('beforeunload', save);
+
+/* =====================================================================
+   起動
+   ===================================================================== */
+if (!load()) P = newPlayer();
+if (!P) P = newPlayer();
+
+if (RUN && !RUN.result && RUN.tick < RUN.totalTicks){
+  /* 放置中に閉じていた分を早送りする */
+  var away = Math.floor((Date.now() - (RUN.startedAt || Date.now())) / 1000 / BAL.tickSeconds) - RUN.tick;
+  selStage = RUN.stageId;
+  logBuf = [];
+  pushLog('sys', '——— 冒険のつづきから再開します ———');
+  if (away > 0){
+    var n = Math.min(away, RUN.totalTicks - RUN.tick);
+    for (var i=0;i<n && !RUN.result;i++){
+      var ev = step(RUN, P, stats(P));
+      var w = new Date(RUN.startedAt + RUN.tick * BAL.tickSeconds * 1000);
+      for (var j=0;j<ev.length;j++) pushLog(ev[j].k, ev[j].m, w);
+    }
+    pushLog('sys', '（離れていた ' + mmss(n*BAL.tickSeconds) + ' 分の出来事を反映しました）');
+  }
+  $('scPrep').classList.add('hide');
+  $('scAdv').classList.remove('hide');
+  renderAdv(); renderLog();
+  lastNow = Date.now();
+  if (RUN.result === 'defeat') finish('defeat');
+  else if (RUN.tick >= RUN.totalTicks) finish('return');
+  else startTimer();
+} else {
+  RUN = null;
+}
+renderPrep();
+save();   /* 初回起動でもIDと初期状態を確定させる */
+
+})();
+</script>
+</body>
+</html>
