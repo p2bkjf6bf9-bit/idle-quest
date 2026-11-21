@@ -112,6 +112,41 @@ button.danger:hover:not(:disabled){background:#2a1a1e;}
 .slot.pick:hover{border-color:var(--gold);background:#272436;}
 .slot .tap{font-size:9px;color:#5d6591;letter-spacing:.1em;margin-top:3px;}
 .item.isEq{border-color:#2f6b50;background:#17251f;}
+.item.isLocked{border-color:#5a4a2a;}
+.bdg.lock{background:rgba(233,196,106,.2);}
+.lockbtn{padding:4px 8px;font-size:12px;line-height:1;filter:grayscale(1) opacity(.6);}
+.lockbtn.on{filter:none;border-color:var(--gold);background:#2a2415;}
+/* 同じ系統がそろった装備枠 */
+.slot.syn{background:#241f33;}
+.slot.syn.s-iron  {border-color:#8e9cc0;box-shadow:0 0 0 1px rgba(142,156,192,.35),0 0 18px rgba(142,156,192,.18);}
+.slot.syn.s-silver{border-color:#9fc4ff;box-shadow:0 0 0 1px rgba(159,196,255,.4),0 0 18px rgba(159,196,255,.2);}
+.slot.syn.s-dragon{border-color:#b79cff;box-shadow:0 0 0 1px rgba(183,156,255,.45),0 0 20px rgba(183,156,255,.25);}
+.slot.syn.s-cook  {border-color:#ffb778;box-shadow:0 0 0 1px rgba(255,183,120,.45),0 0 20px rgba(255,183,120,.25);}
+.synbdg{
+  display:inline-block;margin-left:5px;padding:1px 7px;border-radius:99px;
+  font-size:10px;font-weight:700;letter-spacing:.02em;
+  background:rgba(255,255,255,.14);color:#fff;
+}
+.synmul{font-weight:700;letter-spacing:.04em;}
+/* 帰還画面の戦利品 */
+.loot{
+  margin:14px 0 4px;padding:12px;border-radius:12px;
+  background:rgba(233,196,106,.06);border:1px solid rgba(233,196,106,.25);
+}
+.loot.none{background:rgba(255,255,255,.03);border-color:var(--line);}
+.loot h5{
+  margin:0 0 9px;font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:700;
+}
+.loot.none h5{color:var(--dim);}
+.loot .item{background:#1b2231;}
+.loot .item .vl{color:var(--blue);}
+.loot .tagx{font-size:9px;padding:1px 6px;border-radius:99px;margin-left:5px;
+  background:rgba(255,255,255,.1);color:var(--dim);}
+.loot .empty-msg{padding:4px 0;}
+.synmul.s-iron{color:#b8c4dc;} .synmul.s-silver{color:#cfe2ff;}
+.synmul.s-dragon{color:var(--purple);} .synmul.s-cook{color:#ffc89a;}
+.stage.locked{opacity:.78;border-style:dashed;}
+.stage.locked:hover{opacity:1;border-color:var(--gold);}
 .price{font-size:11px;color:var(--gold);font-variant-numeric:tabular-nums;}
 .shopdesc{font-size:10.5px;color:var(--dim);display:block;font-weight:400;}
 
@@ -224,6 +259,38 @@ input[type=text]{
 .speed button{padding:3px 8px;font-size:10.5px;}
 .speed button.on{background:#303a52;border-color:#47536f;color:var(--gold);}
 .hide{display:none!important;}
+
+/* ---------- チュートリアル ---------- */
+#coach{position:fixed;inset:0;z-index:38;pointer-events:none;transition:opacity .2s;}
+/* 別の画面が開いている間は、当たり判定ごと消す（クリックを奪わせない） */
+#coach.away{opacity:0;visibility:hidden;}
+#coachBlock{position:fixed;inset:0;pointer-events:auto;}
+#coach.pass #coachBlock{pointer-events:none;}
+#coachHole{
+  position:fixed;border-radius:16px;pointer-events:none;
+  border:2px solid var(--gold);
+  box-shadow:0 0 0 9999px rgba(4,6,12,.76), 0 0 24px rgba(233,196,106,.35);
+  transition:left .28s,top .28s,width .28s,height .28s;
+}
+#coachBubble{
+  position:fixed;width:min(360px,calc(100vw - 28px));pointer-events:auto;
+  background:var(--panel);border:1px solid #3c4766;border-radius:14px;
+  padding:16px 18px 13px;box-shadow:0 20px 56px rgba(0,0,0,.65);
+}
+#coachBubble h4{margin:0 0 8px;font-size:14.5px;color:var(--gold);letter-spacing:.04em;}
+#coachBubble p{margin:0;font-size:13px;line-height:1.85;color:#c6cdea;}
+#coachBubble .do{
+  margin-top:11px;padding:9px 11px;border-radius:9px;font-size:12.5px;
+  background:rgba(233,196,106,.12);border:1px solid rgba(233,196,106,.35);color:var(--gold);
+}
+#coachBubble .foot{display:flex;align-items:center;gap:8px;margin-top:13px;}
+#coachBubble .foot .sp{margin-left:auto;}
+.coach-skip{
+  background:none;border:0;padding:0;cursor:pointer;
+  font-size:9.5px;color:#49506b;text-decoration:underline;letter-spacing:.02em;
+}
+.coach-skip:hover{color:#8c96ad;}
+#coachBubble .count{font-size:10px;color:#49506b;letter-spacing:.1em;}
 </style>
 </head>
 <body>
@@ -248,7 +315,7 @@ input[type=text]{
 <!-- ============ 準備画面 ============ -->
 <div id="scPrep">
   <div class="grid2">
-    <div class="panel">
+    <div class="panel" id="panelHero">
       <h2><span class="n">1</span>冒険者</h2>
       <div class="kv"><span>LEVEL <b id="plv">1</b></span><span>HP <b id="php">60 / 60</b></span></div>
       <div class="bar hp"><i id="phpbar" style="width:100%"></i></div>
@@ -262,14 +329,14 @@ input[type=text]{
       <div class="mul" id="pmul"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="panelGear">
       <h2><span class="n">2</span>そうび</h2>
       <div class="slots" id="slots"></div>
-      <div class="note">同じ系統を2つ揃えると攻撃力・防御力が<b>1.25倍</b>、3つ揃うと<b>1.5倍</b>になります。装備が欠けていても出発できます。</div>
+      <div class="note">装備が欠けていても出発できます。</div>
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="panelInv">
     <h2><span class="n">3</span>もちもの<span style="color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;">（各5個まで・あふれたら売る）</span></h2>
     <div class="invtabs" id="invtabs">
       <button data-k="w" class="on">⚔️ 武器 <span id="cw"></span></button>
@@ -280,17 +347,17 @@ input[type=text]{
     <div class="invlist" id="invlist"></div>
   </div>
 
-  <div class="panel">
-    <h2><span class="n">4</span>売店<span style="color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;">（いらない装備を売ったお金で買えます）</span></h2>
+  <div class="panel" id="panelShop">
+    <h2><span class="n">4</span>よろず屋<span style="color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;">（いらない装備を売ったお金で買えます）</span></h2>
     <div class="invlist" id="shoplist"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="panelStage">
     <h2><span class="n">5</span>ステージをえらぶ</h2>
     <div class="stages" id="stages"></div>
     <div style="display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap;">
       <button class="primary" id="btnGo" disabled>出発する</button>
-    </div>
+</div>
   </div>
 </div>
 
@@ -324,7 +391,8 @@ input[type=text]{
       <div>
         <div class="enemy idle" id="aEnemy">街道を進んでいる…</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button id="btnAbort" class="ghost danger" style="margin-left:auto;">冒険を中断</button>
+<button id="btnAbort" class="ghost danger" style="margin-left:auto;">冒険を中断</button>
+          <button id="btnBackPrep" class="primary hide" style="margin-left:auto;font-size:13px;padding:9px 20px;">準備にもどる</button>
         </div>
       </div>
     </div>
@@ -339,6 +407,13 @@ input[type=text]{
 </div>
 
 <!-- ============ modal ============ -->
+<!-- チュートリアル（画面を指しながら進む案内） -->
+<div id="coach" class="hide">
+  <div id="coachBlock"></div>
+  <div id="coachHole"></div>
+  <div id="coachBubble"></div>
+</div>
+
 <div class="modal hide" id="modal"><div class="box" id="modalBox"></div></div>
 <input type="file" id="fileIn" accept=".json,application/json" style="display:none">
 
@@ -363,14 +438,30 @@ var BAL = {
   potionHeal: 22,            // 薬草の回復量
   potionThreshold: 0.4,      // HPがこの割合を下回ると自動で使う
   invMax: 5,                 // 武器/盾/防具それぞれの所持上限
-  setMul2: 1.25, setMul3: 1.5, cookMul3: 1.6,
+  itemMax: 3,                // アイテムの所持上限（持っていけるのは1つ）
+  hasteMul: 1.5,             // 速度の秘薬で何倍速になるか
+  setMul2: 1.25, setMul3: 1.5, cookMul3: 1.7,
   reviveHp: 0.8,             // 強制帰還の次回出発HP
+  failExpRate: 0.8,          // 失敗したとき、その冒険で得た経験値のうち残る割合
+  rescueFeePerMin: 6,        // 救助費用（ステージ1分あたりのG）
+  buybackMul: 3,             // 失敗時に戦利品を持ち帰る値段（売値の何倍か）
   gearPerRun: 3,             // 1回の冒険で手に入る武器・盾・防具の上限（画面には出さない）
   bossAt: 0.80,              // 行程のこの割合で中ボスが出る
   expNeedMul: 1.15           // 大きくするほどレベルが上がりにくくなる
 };
 
 function expToNext(lv){ return Math.round(18 * Math.pow(lv, 1.5) * BAL.expNeedMul); }
+/* レベルと端数を、通算の経験値に直す／戻す（失敗時の8割計算に使う） */
+function totalExp(lv, exp){
+  var t = 0;
+  for (var i = 1; i < lv; i++) t += expToNext(i);
+  return t + exp;
+}
+function fromTotalExp(total){
+  var lv = 1;
+  while (total >= expToNext(lv) && lv < 999){ total -= expToNext(lv); lv++; }
+  return { lv:lv, exp:total };
+}
 
 /* ---- 系統 ---- */
 var SERIES = {
@@ -389,28 +480,42 @@ var GEAR = {
     {id:'w_iron',  n:'アイアンソード',   ic:'⚔️', s:'iron',   v:4,  t:1, p:38},
     {id:'w_silv',  n:'シルバーレイピア', ic:'🗡️', s:'silver', v:6,  t:2, p:95},
     {id:'w_drag',  n:'ドラゴンファング', ic:'🦷', s:'dragon', v:9,  t:3, p:230},
-    {id:'w_fork',  n:'フォーク',         ic:'🍴', s:'cook',   v:5,  t:9, p:70}
+    {id:'w_fork',  n:'フォーク',         ic:'🍴', s:'cook',   v:7,  t:9, p:140},
+    {id:'w_spear', n:'鋼の長槍',         ic:'🔱', s:'none',   v:6,  t:8, p:70}
   ],
   s:[
     {id:'s_wood',  n:'木のたて',         ic:'🪵', s:'none',   v:1,  t:0, p:6},
     {id:'s_iron',  n:'アイアンシールド', ic:'🛡️', s:'iron',   v:2,  t:1, p:38},
     {id:'s_silv',  n:'シルバーガード',   ic:'🪞', s:'silver', v:3,  t:2, p:95},
     {id:'s_drag',  n:'竜鱗の盾',         ic:'🐲', s:'dragon', v:5,  t:3, p:230},
-    {id:'s_lid',   n:'なべぶた',         ic:'🥘', s:'cook',   v:3,  t:9, p:70}
+    {id:'s_lid',   n:'なべぶた',         ic:'🥘', s:'cook',   v:4,  t:9, p:110},
+    {id:'s_rock',  n:'岩の大盾',         ic:'🪨', s:'none',   v:3,  t:8, p:70}
   ],
   a:[
     {id:'a_cloth', n:'旅人の服',         ic:'👕', s:'none',   v:1,  t:0, p:6},
     {id:'a_iron',  n:'アイアンメイル',   ic:'🥋', s:'iron',   v:2,  t:1, p:38},
     {id:'a_silv',  n:'シルバーメイル',   ic:'🧥', s:'silver', v:3,  t:2, p:95},
     {id:'a_drag',  n:'竜鱗の鎧',         ic:'🐉', s:'dragon', v:5,  t:3, p:230},
-    {id:'a_apron', n:'料理着',           ic:'🧑‍🍳', s:'cook', v:3,  t:9, p:70}
+    {id:'a_apron', n:'料理着',           ic:'🧑‍🍳', s:'cook', v:4,  t:9, p:110},
+    {id:'a_chain', n:'鎖かたびら',       ic:'⛓️', s:'none',   v:3,  t:8, p:70}
   ]
 };
 
-/* ---- 売店のしなもの ---- */
+/* ---- よろず屋のしなもの ---- */
+var ITEMS = {
+  potion:{ id:'potion', n:'薬草',       ic:'🌿', eff:'HP+22', p:8,
+           desc:'冒険中、HPが40%を下回ると自動でつかう。' },
+  haste: { id:'haste',  n:'速度の秘薬', ic:'🌀', eff:'1.5倍速', p:20,
+           desc:'出発のときに飲みほす。帰るまでの道のりが1.5倍の速さで進む。' }
+};
+function itemById(id){ return ITEMS[id] || null; }
+
 var SHOP = [
-  {id:'potion', n:'薬草', ic:'🌿', price:25,
-   desc:'冒険中、HPが' + '40' + '%を下回ると自動でつかう。持てるのは1つまで。'}
+  {kind:'item', id:'potion',  price:25},
+  {kind:'item', id:'haste',   price:60},
+  {kind:'gear', id:'w_spear', price:200},
+  {kind:'gear', id:'s_rock',  price:200},
+  {kind:'gear', id:'a_chain', price:200}
 ];
 var SLOTN = {w:'ぶき', s:'たて', a:'ぼうぐ'};
 var SLOTIC = {w:'⚔️', s:'🛡️', a:'🥋'};
@@ -469,9 +574,53 @@ var STAGES = [
     mid:{n:'氷の魔女リーゼ', ic:'❄️', hp:200, atk:25, def:8, exp:380},
     big:{n:'古竜ヴァルグ',   ic:'🐲', hp:330, atk:31, def:12, exp:900, chance:0.40},
     drop:[2,3]
+  },
+  {
+    id:'gate', n:'封じられた裏街道', ic:'🚧', lv:4, min:20,
+    desc:'王の命で封鎖された道。門番が通してくれない。この先に何があるのかは誰も語らない。',
+    lockCost:300,
+    gate:{
+      who:'酔っぱらいの門番',
+      ic:'🍺',
+      lines:[
+        'ひっく……おう、旅人さんかい。わるいね、この先は通せねえんだ。',
+        '王さまの命令でな、危ねえからって封鎖されてんのよ。何が出るかって？　おれも知らねえ。知らねえから怖えんだ。',
+        'ただなあ……おれも、こんな寒いとこで見張ってると、喉がかわくわけよ。',
+        'まあ、<b>300G</b> ばかし置いてってくれたら、おれはちょいと酒場に行く用ができちまうかもしれねえなあ。'
+      ],
+      paid:'……おお、話がわかるじゃねえの。おれは何も見てねえ。何も見てねえからな。達者でやれよ。'
+    },
+    enc:0.16, mix:[0.05,0.30,0.65],
+    mid:{n:'黒騎士バルド',   ic:'🗡️', hp:260, atk:28, def:10, exp:520},
+    big:{n:'禍つ巨獣ベヒモス', ic:'🦣', hp:400, atk:35, def:14, exp:1200, chance:0.35},
+    drop:[2,3]
   }
 ];
-function stageById(id){ for (var i=0;i<STAGES.length;i++) if (STAGES[i].id===id) return STAGES[i]; return STAGES[0]; }
+/* ---- チュートリアル（夢）専用ステージ ---- */
+var TUT_STAGES = [
+  {
+    id:'t_yama', n:'裏山', ic:'⛰️', lv:1, sec:5, tickSec:0.4, tut:true,
+    desc:'家のうらの小さな山。夢の中なので、たいした危険はない。',
+    enc:0.55, mix:[1,0,0],
+    mid:{n:'ねぼけスライム', ic:'🫧', hp:8, atk:1, def:0, exp:6},
+    big:{n:'—', ic:'—', hp:1, atk:1, def:0, exp:0, chance:0},
+    drop:[0]
+  },
+  {
+    id:'t_isu', n:'椅子のうえ', ic:'🪑', lv:1, sec:5, tickSec:0.4, tut:true,
+    desc:'なぜか椅子の上。夢とはそういうものだ。足もとが少し遠い。',
+    enc:0.55, mix:[1,0,0],
+    mid:{n:'クッションの主', ic:'🛋️', hp:8, atk:1, def:0, exp:6},
+    big:{n:'—', ic:'—', hp:1, atk:1, def:0, exp:0, chance:0},
+    drop:[0]
+  }
+];
+function activeStages(){ return (P && P.tut) ? TUT_STAGES : STAGES; }
+function stageById(id){
+  var all = STAGES.concat(TUT_STAGES);
+  for (var i=0;i<all.length;i++) if (all[i].id===id) return all[i];
+  return STAGES[0];
+}
 
 /* =====================================================================
    純粋ロジック（画面に依存しない＝シミュレーションで検証できる）
@@ -504,15 +653,36 @@ function stats(p){
 }
 function dmg(atk, def){ return Math.max(1, Math.round(atk * rnd(0.85, 1.15)) - def); }
 
+/* 装備は「定義のコピー」を持つ。同じ種類でも1つずつロックできるようにするため */
+function mkGear(def){
+  return {id:def.id, n:def.n, ic:def.ic, s:def.s, v:def.v, t:def.t, p:def.p, locked:false};
+}
+
+/* アイテム：所持は3つまで、冒険に持っていけるのは1つ（p.carry） */
+function addItem(p, id){
+  if (!p.items) p.items = [];
+  if (p.items.length >= BAL.itemMax) return false;
+  p.items.push(id);
+  if (!p.carry) p.carry = id;
+  return true;
+}
+function consumeCarry(p){
+  var id = p.carry, i = p.items ? p.items.indexOf(id) : -1;
+  if (i >= 0) p.items.splice(i, 1);
+  p.carry = null;
+  return id;
+}
+
 function makeRun(stage, startHpRatio){
-  var total = Math.round(stage.min * 60 / BAL.tickSeconds);
+  var tickSec = stage.tickSec || BAL.tickSeconds;
+  var total = Math.max(2, Math.round((stage.sec || stage.min * 60) / tickSec));
   return {
-    stageId: stage.id, totalTicks: total, tick: 0,
+    stageId: stage.id, totalTicks: total, tick: 0, tickSec: tickSec,
     phase:'travel', enemy:null, turn:'p',
     midDone:false, bigDone:false, bigQueued:false,
     killed:0, expGot:0, chests:0, fairyGot:null, gearGot:0,
-    loot:[], potionsUsed:0, startHpRatio: startHpRatio || 1,
-    result:null, startedAt: Date.now()
+    loot:[], itemsFound:[], startTotalExp:0, potionsUsed:0, startHpRatio: startHpRatio || 1,
+    speedMul:1, result:null, startedAt: Date.now()
   };
 }
 function spawn(stage){
@@ -551,14 +721,14 @@ function step(run, p, st){
       while (p._regen >= 1 && p.hp < st.maxHp){ p.hp++; p._regen--; }
     }
     /* 宝箱 */
-    var chestP = BAL.chestPer10min / (600 / BAL.tickSeconds);
+    var chestP = BAL.chestPer10min / (600 / run.tickSec);
     if (Math.random() < chestP){
       run.chests++;
       /* 装備の上限に達していたら中身は薬草あつかい（上限は画面に出さない） */
       var wantGear = Math.random() >= BAL.chestPotionRate && run.gearGot < BAL.gearPerRun;
       if (!wantGear){
-        if (!p.item){ p.item = 'potion'; ev.push({k:'get', m:'宝箱から 🌿薬草 をゲットしました'}); }
-        else ev.push({k:'get', m:'宝箱を見つけたが、薬草はもう持っている（持てるのは1つまで）'});
+        if (addItem(p, 'potion')){ run.itemsFound.push('potion'); ev.push({k:'get', m:'宝箱から 🌿薬草 をゲットしました'}); }
+        else ev.push({k:'get', m:'宝箱を見つけたが、アイテムをこれ以上持てない（' + BAL.itemMax + 'つまで）'});
       } else {
         var slot = ['w','s','a'][Math.floor(Math.random()*3)];
         var g = gearByTier(slot, [0,1]);
@@ -623,9 +793,10 @@ function step(run, p, st){
     var d2 = dmg(e.atk, st.def);
     p.hp -= d2;
     ev.push({k:'hurt', m:e.n + 'から ' + d2 + ' ダメージを受けました（HP ' + Math.max(0,p.hp) + '）'});
-    /* 薬草の自動使用 */
-    if (p.hp > 0 && p.item === 'potion' && p.hp < st.maxHp * BAL.potionThreshold){
-      p.item = null; p.hp = Math.min(st.maxHp, p.hp + BAL.potionHeal); run.potionsUsed++;
+    /* 薬草の自動使用（持っていった1つだけ使える） */
+    if (p.hp > 0 && p.carry === 'potion' && p.hp < st.maxHp * BAL.potionThreshold){
+      consumeCarry(p);
+      p.hp = Math.min(st.maxHp, p.hp + BAL.potionHeal); run.potionsUsed++;
       ev.push({k:'get', m:'🌿薬草をつかった。HPが ' + p.hp + ' に回復した'});
     }
     if (p.hp <= 0){ p.hp = 0; run.result = 'defeat'; return ev; }
@@ -656,7 +827,8 @@ function rollFairy(p, run){
    ===================================================================== */
 window.SIM = {
   run: function(stageId, lv, gearIds, withPotion){
-    var p = { lv: lv||1, exp:0, hp:0, item: withPotion ? 'potion' : null,
+    var p = { lv: lv||1, exp:0, hp:0,
+              items: withPotion ? ['potion'] : [], carry: withPotion ? 'potion' : null,
               equip:{w:null,s:null,a:null}, inv:{w:[],s:[],a:[]} };
     (gearIds||[]).forEach(function(id){ var g = gearById(id); if (g) p.equip[g.slot] = g.def; });
     var st = stats(p); p.hp = st.maxHp;
@@ -681,23 +853,44 @@ window.SIM = {
 var SAVEKEY = 'idlequest.save.v1';
 var P = null, RUN = null, speed = 1, selStage = null, invTab = 'w', timer = null;
 
+/* テスト版だけに存在する目印。公開版ではこのUIごと取り除かれるので false になる */
+var DEV = !!document.getElementById('devtools');
+
+/* 強い順に、その枠の装備を n 個 */
+function topGear(slot, n){
+  return GEAR[slot].slice().sort(function(a,b){ return b.v - a.v || b.p - a.p; }).slice(0, n);
+}
+
 function newPlayer(){
   var id = 'PL-';
   for (var i=0;i<8;i++) id += '0123456789ABCDEF'[Math.floor(Math.random()*16)];
   return {
     version:1, id:id, name:'冒険者', driveFileId:null,
-    lv:1, exp:0, hp:BAL.baseHp, item:null, gold:0,
+    lv:1, exp:0, hp:BAL.baseHp, items:[], carry:null, gold:0, unlocked:{},
     equip:{w:null,s:null,a:null}, inv:{w:[],s:[],a:[]},
     nextHpRatio:1, totalRuns:0, totalKills:0, totalGold:0, createdAt:Date.now()
   };
 }
+/* テスト版は最初から、武器・盾・防具それぞれ上位5つと 1000G を持った状態で始める */
+var DEV_GOLD = 1000;
+function devFillGear(p){
+  ['w','s','a'].forEach(function(k){ p.inv[k] = topGear(k, BAL.invMax).map(mkGear); });
+  return p;
+}
+function seedDevGear(p){
+  devFillGear(p);
+  p.gold = DEV_GOLD;
+  return p;
+}
 function serialize(){
   function g(x){ return x ? x.id : null; }
+  function invEnt(x){ return x.locked ? {id:x.id, locked:1} : x.id; }
   return {
     version:1, id:P.id, name:P.name, driveFileId:P.driveFileId,
-    lv:P.lv, exp:P.exp, hp:P.hp, item:P.item, gold:P.gold, totalGold:P.totalGold,
+    lv:P.lv, exp:P.exp, hp:P.hp, items:P.items.slice(), carry:P.carry,
+    gold:P.gold, totalGold:P.totalGold, unlocked:P.unlocked,
     equip:{w:g(P.equip.w), s:g(P.equip.s), a:g(P.equip.a)},
-    inv:{ w:P.inv.w.map(function(x){return x.id;}), s:P.inv.s.map(function(x){return x.id;}), a:P.inv.a.map(function(x){return x.id;}) },
+    inv:{ w:P.inv.w.map(invEnt), s:P.inv.s.map(invEnt), a:P.inv.a.map(invEnt) },
     nextHpRatio:P.nextHpRatio, totalRuns:P.totalRuns, totalKills:P.totalKills,
     createdAt:P.createdAt, savedAt:Date.now(),
     run: RUN ? RUN : null
@@ -706,26 +899,103 @@ function serialize(){
 function deserialize(d){
   var p = newPlayer();
   p.id = d.id || p.id; p.name = d.name || p.name; p.driveFileId = d.driveFileId || null;
-  p.lv = d.lv||1; p.exp = d.exp||0; p.item = d.item||null;
+  p.lv = d.lv||1; p.exp = d.exp||0;
   p.gold = d.gold||0; p.totalGold = d.totalGold||0;
+  p.unlocked = (d.unlocked && typeof d.unlocked === 'object') ? d.unlocked : {};
+  /* 旧セーブ（item が1つだけ）からの移行 */
+  if (Array.isArray(d.items)){
+    p.items = d.items.filter(function(x){ return !!itemById(x); }).slice(0, BAL.itemMax);
+    p.carry = (d.carry && p.items.indexOf(d.carry) >= 0) ? d.carry : null;
+  } else if (d.item && itemById(d.item)){
+    p.items = [d.item]; p.carry = d.item;
+  } else { p.items = []; p.carry = null; }
   p.nextHpRatio = (typeof d.nextHpRatio==='number') ? d.nextHpRatio : 1;
   p.totalRuns = d.totalRuns||0; p.totalKills = d.totalKills||0; p.createdAt = d.createdAt||Date.now();
   ['w','s','a'].forEach(function(k){
     p.equip[k] = d.equip && d.equip[k] ? (gearById(d.equip[k])||{}).def || null : null;
-    p.inv[k] = ((d.inv && d.inv[k]) || []).map(function(id){ var g = gearById(id); return g ? g.def : null; }).filter(Boolean);
+    p.inv[k] = ((d.inv && d.inv[k]) || []).map(function(e){
+      var id = (e && typeof e === 'object') ? e.id : e;
+      var g = gearById(id);
+      if (!g) return null;
+      var inst = mkGear(g.def);
+      if (e && typeof e === 'object' && e.locked) inst.locked = true;
+      return inst;
+    }).filter(Boolean);
   });
   p.hp = (typeof d.hp==='number') ? d.hp : stats(p).maxHp;
   return { p:p, run:d.run||null };
 }
+/* ---------------------------------------------------------------
+   セーブデータの符号化
+   中身をそのまま読めない形にして、合言葉（チェックサム）を添える。
+   書き出すたびに salt が変わるので、同じ状態でも毎回ちがう文字列になる。
+   ※ これは「うっかり書き換え」を防ぐためのもので、暗号ではありません。
+     ページのJSを読めば誰でも復号できます。
+   --------------------------------------------------------------- */
+function b64enc(str){
+  var bytes = new TextEncoder().encode(str), bin = '';
+  for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/=+$/, '');
+}
+function b64bytes(b64){
+  var bin = atob(b64.replace(/-/g,'+').replace(/_/g,'/'));
+  var out = new Uint8Array(bin.length);
+  for (var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function checksum(s){
+  var h = 5381;
+  for (var i=0;i<s.length;i++) h = (((h * 33) ^ s.charCodeAt(i)) >>> 0);
+  return h.toString(36);
+}
+function xorBytes(bytes, key){
+  for (var i=0;i<bytes.length;i++) bytes[i] ^= (key.charCodeAt(i % key.length) & 0xFF);
+  return bytes;
+}
+function packSave(obj){
+  var json = JSON.stringify(obj);
+  var salt = (Math.floor(Math.random()*0x7FFFFFFF)).toString(36) + (Date.now()%100000).toString(36);
+  var key  = 'IdleQuest/' + salt;
+  var payload = checksum(json + key) + '|' + json;
+  var bytes = new TextEncoder().encode(payload), bin = '';
+  xorBytes(bytes, key);
+  for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  return 'IQ1.' + salt + '.' + btoa(bin).replace(/=+$/, '');
+}
+function unpackSave(text){
+  if (!text) throw new Error('empty');
+  text = String(text).trim();
+  /* ファイルで渡す場合の包み */
+  if (text.charAt(0) === '{'){
+    var o = JSON.parse(text);
+    if (o && typeof o.data === 'string') return unpackSave(o.data);
+    return o;                       /* 旧形式のそのままのJSON */
+  }
+  var m = /^IQ1\.([0-9a-z]+)\.([A-Za-z0-9+/_=-]+)$/.exec(text.replace(/\s+/g,''));
+  if (!m) throw new Error('format');
+  var key = 'IdleQuest/' + m[1];
+  var payload = new TextDecoder().decode(xorBytes(b64bytes(m[2]), key));
+  var k = payload.indexOf('|');
+  if (k < 0) throw new Error('format');
+  var sum = payload.slice(0, k), json = payload.slice(k + 1);
+  if (checksum(json + key) !== sum) throw new Error('tampered');
+  return JSON.parse(json);
+}
+function saveFileText(){
+  return JSON.stringify({ game:'idle-quest', version:1, savedAt:new Date().toISOString(),
+                          note:'このファイルはゲームの「読み込み」から復元できます。',
+                          data: packSave(serialize()) }, null, 2);
+}
+
 function save(){
-  try { localStorage.setItem(SAVEKEY, JSON.stringify(serialize())); } catch(e){}
+  if (P && P.tut) return;      /* 夢の中のことは記録しない */
+  try { localStorage.setItem(SAVEKEY, packSave(serialize())); } catch(e){}
 }
 function load(){
   try {
     var raw = localStorage.getItem(SAVEKEY);
     if (!raw) return false;
-    var d = JSON.parse(raw);
-    var r = deserialize(d);
+    var r = deserialize(unpackSave(raw));
     P = r.p; RUN = r.run;
     return true;
   } catch(e){ return false; }
@@ -769,8 +1039,12 @@ function invSorted(slot, inv){
 }
 function badges(r){
   return (r.eq ? '<span class="bdg eq">装備中</span>' : '') +
-         (r.dup ? '<span class="bdg dup">重複</span>' : '');
+         (r.dup ? '<span class="bdg dup">重複</span>' : '') +
+         (r.g.locked ? '<span class="bdg lock">🔒</span>' : '');
 }
+function isLocked(s){ return !!(s.lockCost && !(P.unlocked && P.unlocked[s.id])); }
+function stageSeconds(s){ return s.sec || s.min * 60; }
+function stageTimeLabel(s){ return s.sec ? s.sec + '秒' : s.min + '分'; }
 
 function renderPrep(){
   var st = stats(P);
@@ -788,72 +1062,109 @@ function renderPrep(){
   $('pgold').textContent = P.gold + ' G';
   $('pgold2').textContent = P.gold;
   $('pmul').innerHTML = st.set.c >= 2
-    ? '✦ ' + SERIES[st.set.s].n + 'セット ' + st.set.c + 'つ揃い　能力 ×' + st.set.m
-    : '<span style="color:#525c74">同じ系統を2つ揃えると ×1.25</span>';
+    ? '<span class="synmul s-' + SERIES[st.set.s].c + '">✦ ' + SERIES[st.set.s].n + ' ' + st.set.c + 'つ揃い　×' + st.set.m + '</span>'
+    : '';
 
   /* 装備スロット */
   var h = '';
   ['w','s','a'].forEach(function(k){
     var g = P.equip[k], n = P.inv[k].length;
-    h += '<div class="slot pick' + (g?' filled':'') + '" data-slot="' + k + '">' +
+    /* 同じ系統が2つ以上そろっている枠は色が変わり、倍率が出る */
+    var syn = !!(g && st.set.c >= 2 && g.s === st.set.s);
+    h += '<div class="slot pick' + (g?' filled':'') + (syn?' syn s-'+SERIES[g.s].c:'') + '" data-slot="' + k + '">' +
          '<div class="lab">' + SLOTIC[k] + ' ' + SLOTN[k] + '</div>' +
-         (g ? '<div class="ic">' + g.ic + '</div><div class="nm">' + esc(g.n) + '</div><div class="vl">+' + g.v + '</div><div>' + serTag(g) + '</div>'
+         (g ? '<div class="ic">' + g.ic + '</div><div class="nm">' + esc(g.n) + '</div><div class="vl">+' + g.v + '</div>' +
+              '<div>' + serTag(g) + (syn ? '<span class="synbdg">×' + st.set.m + '</span>' : '') + '</div>'
             : '<div class="empty">なし</div>') +
          '<div class="tap">' + (n ? 'クリックで選ぶ（' + n + '）' : '持っていない') + '</div>' +
          '</div>';
   });
-  h += '<div class="slot pick' + (P.item?' filled':'') + '" data-slot="i">' +
+  var ci = P.carry ? itemById(P.carry) : null;
+  h += '<div class="slot pick' + (ci?' filled':'') + '" data-slot="i">' +
        '<div class="lab">🧪 アイテム</div>' +
-       (P.item ? '<div class="ic">🌿</div><div class="nm">薬草</div><div class="vl">HP+' + BAL.potionHeal + '</div>'
-               : '<div class="empty">なし</div>') +
-       '<div class="tap">' + (P.item ? '冒険中に自動でつかう' : '売店で買える') + '</div>' +
+       (ci ? '<div class="ic">' + ci.ic + '</div><div class="nm">' + ci.n + '</div><div class="vl">' + ci.eff + '</div>'
+           : '<div class="empty">なし</div>') +
+       '<div class="tap">' + (P.items.length ? '持っていく1つを選ぶ（' + P.items.length + '）' : 'よろず屋で買える') + '</div>' +
        '</div>';
   $('slots').innerHTML = h;
 
   /* もちもの */
   ['w','s','a'].forEach(function(k){ $('c'+k).textContent = '(' + P.inv[k].length + '/' + BAL.invMax + ')'; });
-  $('ci').textContent = '(' + (P.item ? 1 : 0) + '/1)';
+  $('ci').textContent = '(' + P.items.length + '/' + BAL.itemMax + ')';
 
   if (invTab === 'i'){
-    $('invlist').innerHTML = P.item
-      ? '<div class="item"><span class="ic">🌿</span>' +
-        '<span class="nm">薬草<span class="shopdesc">冒険中、HPが' + Math.round(BAL.potionThreshold*100) + '%を下回ると自動でつかう</span></span>' +
-        '<span class="vl">HP+' + BAL.potionHeal + '</span></div>'
-      : '<div class="empty-msg">アイテムを持っていません。売店で買えます。</div>';
+    if (!P.items.length){
+      $('invlist').innerHTML = '<div class="empty-msg">アイテムを持っていません。よろず屋で買えます。</div>';
+    } else {
+      var carried = false;
+      $('invlist').innerHTML = P.items.map(function(id, idx){
+        var it = itemById(id);
+        var isCarry = !carried && id === P.carry;
+        if (isCarry) carried = true;
+        return '<div class="item' + (isCarry?' isEq':'') + '">' +
+          '<span class="ic">' + it.ic + '</span>' +
+          '<span class="nm">' + it.n + (isCarry ? '<span class="bdg eq">持っていく</span>' : '') +
+            '<span class="shopdesc">' + it.desc + '</span></span>' +
+          '<span class="vl">' + it.eff + '</span>' +
+          '<span class="btns">' +
+            (isCarry ? '<button data-iact="uncarry">はずす</button>'
+                     : '<button data-iact="carry" data-id="' + id + '">持っていく</button>') +
+            '<button data-iact="drop" data-idx="' + idx + '" class="danger">すてる</button>' +
+          '</span></div>';
+      }).join('') +
+      '<div class="note">冒険に持っていけるのは1つだけです。残りは町に置いていきます。</div>';
+    }
   } else {
     var rows = invSorted(invTab);
     if (!rows.length) $('invlist').innerHTML = '<div class="empty-msg">まだ持っていません。ボスや宝箱から手に入ります。</div>';
     else $('invlist').innerHTML = rows.map(function(r){
-      return '<div class="item' + (r.eq?' isEq':'') + '">' +
+      return '<div class="item' + (r.eq?' isEq':'') + (r.g.locked?' isLocked':'') + '">' +
         '<span class="ic">' + r.g.ic + '</span>' +
         '<span class="nm">' + esc(r.g.n) + ' ' + serTag(r.g) + badges(r) + '</span>' +
         '<span class="vl">+' + r.g.v + '</span>' +
         '<span class="btns">' +
+          '<button data-act="lock" data-i="' + r.i + '" class="lockbtn' + (r.g.locked?' on':'') + '" title="' +
+            (r.g.locked?'ロックを外す':'売れないようにロックする') + '">' + (r.g.locked?'🔒':'🔓') + '</button>' +
           '<button data-act="eq" data-i="' + r.i + '">' + (r.eq?'はずす':'そうび') + '</button>' +
-          '<button data-act="sell" data-i="' + r.i + '">売る <span class="price">+' + r.g.p + 'G</span></button>' +
+          '<button data-act="sell" data-i="' + r.i + '"' + (r.g.locked?' disabled':'') + '>' +
+            (r.g.locked ? 'ロック中' : '売る <span class="price">+' + r.g.p + 'G</span>') + '</button>' +
         '</span></div>';
     }).join('');
   }
 
-  /* 売店 */
+  /* よろず屋 */
   $('shoplist').innerHTML = SHOP.map(function(s){
-    var have = !!P.item, afford = P.gold >= s.price;
-    var why = have ? '持ちもの満杯' : (afford ? '' : 'お金が足りない');
+    var ic, nm, desc, full;
+    if (s.kind === 'item'){
+      var it = itemById(s.id);
+      ic = it.ic; nm = it.n; desc = it.desc + '（' + it.eff + '）';
+      full = P.items.length >= BAL.itemMax;
+    } else {
+      var gg = gearById(s.id);
+      ic = gg.def.ic; nm = gg.def.n;
+      desc = SLOTN[gg.slot] + ' +' + gg.def.v + '　行商人が仕入れてきた、ありふれた品';
+      full = P.inv[gg.slot].length >= BAL.invMax;
+    }
+    var afford = P.gold >= s.price;
+    var why = full ? '持ちもの満杯' : (afford ? '' : 'お金が足りない');
     return '<div class="item">' +
-      '<span class="ic">' + s.ic + '</span>' +
-      '<span class="nm">' + s.n + '<span class="shopdesc">' + s.desc + '</span></span>' +
+      '<span class="ic">' + ic + '</span>' +
+      '<span class="nm">' + nm + '<span class="shopdesc">' + desc + '</span></span>' +
       '<span class="price">' + s.price + ' G</span>' +
-      '<span class="btns"><button data-buy="' + s.id + '"' + (have||!afford ? ' disabled' : '') + '>' +
+      '<span class="btns"><button data-buy="' + s.id + '"' + (full||!afford ? ' disabled' : '') + '>' +
       (why || 'かう') + '</button></span></div>';
   }).join('');
 
   /* ステージ */
-  $('stages').innerHTML = STAGES.map(function(s){
-    return '<button class="stage' + (selStage===s.id?' on':'') + '" data-st="' + s.id + '">' +
-      '<div class="top"><span class="ic">' + s.ic + '</span><span><span class="nm">' + s.n + '</span><br>' +
-      '<span class="lv">LEVEL ' + s.lv + ' ・ ' + s.min + '分で帰還</span></span></div>' +
+  $('stages').innerHTML = activeStages().map(function(s){
+    var locked = isLocked(s);
+    return '<button class="stage' + (selStage===s.id?' on':'') + (locked?' locked':'') + '" data-st="' + s.id + '">' +
+      '<div class="top"><span class="ic">' + (locked ? '🔒' : s.ic) + '</span><span><span class="nm">' + s.n + '</span><br>' +
+      '<span class="lv">LEVEL ' + s.lv + ' ・ ' + stageTimeLabel(s) + 'で帰還</span></span></div>' +
       '<div class="desc">' + s.desc + '</div>' +
-      '<div class="meta"><span>中ボス ' + s.mid.ic + ' ' + s.mid.n + '</span><span>大ボス ' + Math.round(s.big.chance*100) + '%</span></div>' +
+      (locked
+        ? '<div class="meta"><span style="color:var(--gold)">🍺 門番に ' + s.lockCost + ' G はらうと通れる</span></div>'
+        : '<div class="meta"><span>中ボス ' + s.mid.ic + ' ' + s.mid.n + '</span><span>大ボス ' + Math.round(s.big.chance*100) + '%</span></div>') +
       '</button>';
   }).join('');
   $('btnGo').disabled = !selStage;
@@ -879,8 +1190,10 @@ function renderAdv(){
   var stage = stageById(RUN.stageId), st = stats(P);
   $('aIc').textContent = stage.ic;
   $('aNm').textContent = stage.n;
-  $('aSub').textContent = '所要 ' + stage.min + '分　/　LEVEL ' + stage.lv;
-  var elapsed = RUN.tick * BAL.tickSeconds, total = RUN.totalTicks * BAL.tickSeconds;
+  var sm = RUN.speedMul || 1;
+  $('aSub').innerHTML = '所要 ' + mmss(stageSeconds(stage) / sm) + '　/　LEVEL ' + stage.lv +
+    (sm > 1 ? '　<span style="color:var(--purple)">🌀 ' + sm + '倍速</span>' : '');
+  var elapsed = RUN.tick * RUN.tickSec, total = RUN.totalTicks * RUN.tickSec;
   $('aElapsed').textContent = mmss(elapsed);
   $('aTotal').textContent = mmss(total);
   $('aTimebar').style.width = Math.min(100, RUN.tick/RUN.totalTicks*100) + '%';
@@ -895,9 +1208,12 @@ function renderAdv(){
     var g = P.equip[k];
     return SLOTIC[k] + ' ' + (g ? esc(g.n) + ' +' + g.v : '—');
   }).join('　') + (st.set.c>=2 ? '　<span style="color:var(--gold)">✦×' + st.set.m + '</span>' : '');
-  $('aItem').innerHTML = P.item
-    ? '🧪 もちもの: <b style="color:var(--green)">🌿薬草</b>（HPが' + Math.round(BAL.potionThreshold*100) + '%未満で自動使用）'
-    : '<span style="color:#525c74">🧪 もちもの: なし</span>';
+  var ci2 = P.carry ? itemById(P.carry) : null;
+  $('aItem').innerHTML = ci2
+    ? '🧪 持っていったもの: <b style="color:var(--green)">' + ci2.ic + ci2.n + '</b>（' + ci2.desc + '）'
+    : (sm > 1
+        ? '<span style="color:var(--purple)">🌀 速度の秘薬は出発のときに飲みほした</span>'
+        : '<span style="color:#525c74">🧪 持っていったもの: なし</span>');
 
   var e = RUN.enemy;
   if (e){
@@ -920,12 +1236,22 @@ function renderAdv(){
 /* =====================================================================
    モーダル
    ===================================================================== */
-function modal(html, onReady){
+var modalClosable = false;
+function modal(html, onReady, closable){
   $('modalBox').innerHTML = html;
   $('modal').classList.remove('hide');
+  modalClosable = !!closable;
   if (onReady) onReady($('modalBox'));
 }
-function closeModal(){ $('modal').classList.add('hide'); }
+function closeModal(){ $('modal').classList.add('hide'); modalClosable = false; }
+
+/* 閉じてよい画面は、背景クリックと Esc でも閉じられるようにする */
+$('modal').addEventListener('click', function(e){
+  if (modalClosable && e.target === $('modal')) closeModal();
+});
+window.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && modalClosable && !$('modal').classList.contains('hide')) closeModal();
+});
 
 /* =====================================================================
    冒険の進行
@@ -940,8 +1266,16 @@ function startRun(){
     P.nextHpRatio = 1;
     P._regen = 0;
     RUN = makeRun(stage, ratio);
+    RUN.startTotalExp = totalExp(P.lv, P.exp);
     logBuf = [];
-    pushLog('sys', '——— ' + stage.ic + ' ' + stage.n + ' へ出発しました（所要 ' + stage.min + '分）———');
+    /* 速度の秘薬は出発のときに飲む */
+    if (P.carry === 'haste'){
+      consumeCarry(P);
+      RUN.speedMul = BAL.hasteMul;
+    }
+    pushLog('sys', '——— ' + stage.ic + ' ' + stage.n + ' へ出発しました（所要 ' +
+      mmss(stageSeconds(stage) / RUN.speedMul) + '）———');
+    if (RUN.speedMul > 1) pushLog('lvup', '🌀 速度の秘薬を飲みほした。足もとが軽い。道のりが ' + RUN.speedMul + ' 倍の速さで進む。');
     if (ratio < 1) pushLog('sys', '前回の傷が残っている。HP ' + P.hp + ' / ' + st.maxHp + ' でのスタート。');
     var f = rollFairy(P, RUN);
     if (f) pushLog('fairy', '🧚 妖精に出会った！　「これ、使ってみて」' + f.def.ic + f.def.n + '（' + SLOTN[f.slot] + ' +' + f.def.v + '）をもらった');
@@ -977,14 +1311,14 @@ function tickLoop(){
   var dt = (now - lastNow) / 1000;
   lastNow = now;
   if (dt > 60) dt = 60;              // 復帰時の暴走防止
-  acc += dt * speed;
+  acc += dt * speed * (RUN.speedMul || 1);
   var budget = 0;
-  while (acc >= BAL.tickSeconds && !RUN.result && RUN.tick < RUN.totalTicks && budget < 400){
-    acc -= BAL.tickSeconds;
+  while (acc >= RUN.tickSec && !RUN.result && RUN.tick < RUN.totalTicks && budget < 400){
+    acc -= RUN.tickSec;
     budget++;
     var st = stats(P);
     var ev = step(RUN, P, st);
-    var when = new Date(RUN.startedAt + RUN.tick * BAL.tickSeconds * 1000);
+    var when = new Date(RUN.startedAt + RUN.tick * RUN.tickSec * 1000 / (RUN.speedMul || 1));
     for (var i=0;i<ev.length;i++) pushLog(ev[i].k, ev[i].m, when);
   }
   if (RUN.result === 'defeat'){ finish('defeat'); return; }
@@ -993,69 +1327,437 @@ function tickLoop(){
   if (RUN.tick % 10 === 0) save();
 }
 
+/* 帰還画面に出す、手に入れたものの一覧 */
+function lootRows(rows){
+  return '<div class="invlist">' + rows.map(function(x){
+    return '<div class="item">' +
+      '<span class="ic">' + x.ic + '</span>' +
+      '<span class="nm">' + esc(x.n) + (x.ser ? ' ' + x.ser : '') + (x.tag ? '<span class="tagx">' + x.tag + '</span>' : '') + '</span>' +
+      '<span class="vl">' + x.sub + '</span>' +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+/* 冒険で手に入れたものを、買い戻しに使える一覧にする */
+function lootList(run){
+  var out = [];
+  run.loot.forEach(function(l){
+    var g = gearById(l.id);
+    if (g) out.push({ kind:'gear', slot:g.slot, def:g.def, ic:g.def.ic, n:g.def.n,
+                      sub:SLOTN[g.slot] + ' +' + g.def.v, price:g.def.p });
+  });
+  (run.itemsFound || []).forEach(function(id){
+    var it = itemById(id);
+    if (it) out.push({ kind:'item', id:id, ic:it.ic, n:it.n, sub:it.eff, price:it.p });
+  });
+  return out;
+}
+
 function finish(kind){
   stopTimer();
-  var stage = stageById(RUN.stageId), st = stats(P);
-  if (kind === 'defeat'){
-    pushLog('hurt', '✖ 力つきた…　仲間の商隊に拾われ、町まで運ばれた。');
+  var stage = stageById(RUN.stageId);
+  var lost = (kind === 'defeat');
+  var fee = 0, fullFee = 0, expKept = RUN.expGot;
+
+  if (lost){
+    /* 経験値は8割だけ残る（出発時の通算に戻してから足し直す） */
+    expKept = Math.floor(RUN.expGot * BAL.failExpRate);
+    var r = fromTotalExp((RUN.startTotalExp || 0) + expKept);
+    P.lv = r.lv; P.exp = r.exp;
+
+    var st2 = stats(P);
     P.nextHpRatio = BAL.reviveHp;
-    P.hp = Math.max(1, Math.round(st.maxHp * BAL.reviveHp));
+    P.hp = Math.max(1, Math.round(st2.maxHp * BAL.reviveHp));
+
+    /* 救助費用。足りなければ払えるぶんだけ（借金はしない） */
+    fullFee = Math.round(stageSeconds(stage) / 60 * BAL.rescueFeePerMin);
+    fee = Math.min(fullFee, P.gold);
+    P.gold -= fee;
+
+    /* 道中で拾ったアイテムは、いったん手元から消える（買い戻しで取り返せる） */
+    (RUN.itemsFound || []).forEach(function(id){
+      var i = P.items.indexOf(id);
+      if (i >= 0) P.items.splice(i, 1);
+    });
+    if (P.carry && P.items.indexOf(P.carry) < 0) P.carry = null;
+
+    pushLog('hurt', '✖ 力つきた…　通りかかった隊商に助け出され、町まで運ばれた。');
+    if (fee > 0) pushLog('sys', '救助の費用として ' + fee + ' G を支払った。');
+    pushLog('sys', '荷物は道に置いてきてしまった。買い戻すこともできるが、足もとを見られている。');
   } else {
     pushLog('sys', '——— ' + stage.n + ' から無事に帰還しました ———');
     P.nextHpRatio = 1;
   }
   P.totalKills += RUN.killed;
-  renderLog(); renderAdv();
+  renderLog(); renderAdv(); renderPrep();   /* 結果画面の裏の表示も最新にしておく */
 
-  /* 戦利品をもちものへ */
-  var gained = RUN.loot.map(function(l){ var g = gearById(l.id); return g ? g : null; }).filter(Boolean);
-  var overflow = [], autoSold = [], autoGold = 0;
-  gained.forEach(function(g){
-    if (P.inv[g.slot].length < BAL.invMax){ P.inv[g.slot].push(g.def); return; }
-    /* すでに同じ物を持っていて枠も満杯なら、聞かずにその場で売る */
-    var dup = P.inv[g.slot].some(function(x){ return x.id === g.def.id; }) ||
-              (P.equip[g.slot] && P.equip[g.slot].id === g.def.id);
-    if (dup){ autoSold.push(g); autoGold += g.def.p; } else overflow.push(g);
-  });
-  if (autoGold){ P.gold += autoGold; P.totalGold += autoGold; }
+  /* 成功したときだけ、戦利品はそのままもちものへ */
+  var gained = [], overflow = [], autoSold = [], autoGold = 0;
+  if (!lost){
+    gained = RUN.loot.map(function(l){ return gearById(l.id); }).filter(Boolean);
+    gained.forEach(function(g){
+      if (P.inv[g.slot].length < BAL.invMax){ P.inv[g.slot].push(mkGear(g.def)); return; }
+      var dup = P.inv[g.slot].some(function(x){ return x.id === g.def.id; }) ||
+                (P.equip[g.slot] && P.equip[g.slot].id === g.def.id);
+      if (dup){ autoSold.push(g); autoGold += g.def.p; } else overflow.push(g);
+    });
+    if (autoGold){ P.gold += autoGold; P.totalGold += autoGold; }
+  }
+  var leftBehind = lost ? lootList(RUN) : [];
+
+  /* 手に入れたものを、わかりやすく並べる */
+  var lootBlock;
+  if (lost){
+    lootBlock = leftBehind.length
+      ? '<div class="loot none"><h5>道に残してきたもの</h5>' +
+        lootRows(leftBehind.map(function(x){
+          return { ic:x.ic, n:x.n, sub:x.sub, ser:(x.kind==='gear' ? serTag(x.def) : '') };
+        })) +
+        '<p style="font-size:11px;color:var(--dim);margin:9px 0 0;">このあと、お金を払えば取り返せます。</p></div>'
+      : '<div class="loot none"><h5>手に入れたもの</h5><div class="empty-msg">何も持ち帰れませんでした。</div></div>';
+  } else {
+    var rows = [];
+    gained.forEach(function(g){
+      var sold = autoSold.indexOf(g) >= 0;
+      rows.push({ ic:g.def.ic, n:g.def.n, ser:serTag(g.def),
+                  sub:SLOTN[g.slot] + ' +' + g.def.v, tag: sold ? '売却 +' + g.def.p + 'G' : '' });
+    });
+    (RUN.itemsFound || []).forEach(function(id){
+      var it = itemById(id);
+      if (it) rows.push({ ic:it.ic, n:it.n, sub:it.eff, ser:'' });
+    });
+    lootBlock = rows.length
+      ? '<div class="loot"><h5>手に入れたもの　' + rows.length + '点</h5>' + lootRows(rows) + '</div>'
+      : '<div class="loot none"><h5>手に入れたもの</h5><div class="empty-msg">今回は何も見つかりませんでした。</div></div>';
+  }
 
   var summary =
-    '<h3>' + (kind==='defeat' ? '✖ 強制帰還' : '🏳 帰還しました') + '</h3>' +
-    '<p>' + stage.ic + ' ' + stage.n + (kind==='defeat'
+    '<h3>' + (lost ? '✖ 強制帰還' : '🏳 帰還しました') + '</h3>' +
+    '<p>' + stage.ic + ' ' + stage.n + (lost
       ? '　体力が尽きたため、途中で運び出されました。次の出発は <b>HP ' + Math.round(BAL.reviveHp*100) + '%</b> からになります。'
-      : '　予定どおり ' + stage.min + '分の行程を踏破しました。') + '</p>' +
+      : '　予定どおり ' + stageTimeLabel(stage) + 'の行程を踏破しました。') + '</p>' +
     '<div class="res">' +
       '<div><span>たおした数</span><b>' + RUN.killed + '</b></div>' +
-      '<div><span>かくとく経験値</span><b>' + RUN.expGot + '</b></div>' +
+      '<div><span>' + (lost ? 'もちかえった経験値' : 'かくとく経験値') + '</span><b>' + expKept +
+        (lost ? '<span style="font-size:11px;color:var(--dim)"> / ' + RUN.expGot + '</span>' : '') + '</b></div>' +
       '<div><span>いまのレベル</span><b>' + P.lv + '</b></div>' +
       '<div><span>宝箱</span><b>' + RUN.chests + '</b></div>' +
     '</div>' +
+    (lost ? '<p style="font-size:12px;color:' + (fee > 0 ? 'var(--red)' : 'var(--dim)') + ';">救助費用 −' + fee + ' G' +
+      (fee < fullFee ? '　<span style="color:var(--dim)">（本来は ' + fullFee + ' G。持ち合わせがなく、残りは見逃してもらった）</span>' : '') +
+      '</p>' : '') +
     '<p style="font-size:12px;">しょじきん: <b class="gold">' + P.gold + ' G</b></p>' +
     (RUN.midDone ? '<p style="color:var(--green);font-size:12px;">✔ ' + stage.mid.n + ' を撃破</p>' : '<p style="color:var(--dim);font-size:12px;">中ボスには届きませんでした</p>') +
     (RUN.bigDone ? '<p style="color:var(--purple);font-size:12px;">✔✔ 大ボス ' + stage.big.n + ' を撃破！</p>' : '') +
-    (gained.length ? '<p style="font-size:12px;">入手: ' + gained.map(function(g){ return g.def.ic + g.def.n; }).join('、') + '</p>' : '') +
-    (autoSold.length ? '<p style="font-size:11.5px;color:var(--dim);">持ちきれないので道中で売った（同じ物を所持済み）: ' + autoSold.map(function(g){ return g.def.ic + g.def.n; }).join('、') + ' → <span class="gold">+' + autoGold + ' G</span></p>' : '') +
-    '<div class="acts"><button id="mOk" class="primary">もどる</button></div>';
+    lootBlock +
+    (autoSold.length ? '<p style="font-size:11.5px;color:var(--dim);">※ 同じ物を持っていて枠が満杯だったぶんは、道中で売りました → <span class="gold">+' + autoGold + ' G</span></p>' : '') +
+    '<div class="acts"><button id="mLog" class="ghost">ログを見る</button>' +
+    '<button id="mOk" class="primary">' + (leftBehind.length ? 'つぎへ' : 'もどる') + '</button></div>';
+
+  var proceed = function(){
+    var wasTut = !!stage.tut;
+    RUN = null; acc = 0;
+    $('btnBackPrep').classList.add('hide');
+    $('btnAbort').classList.remove('hide');
+    $('scAdv').classList.add('hide');
+    $('scPrep').classList.remove('hide');
+    renderPrep(); save();
+    if (wasTut){ tutWake(); return; }
+    if (leftBehind.length) askBuyback(leftBehind);
+    else if (overflow.length) askDiscard(overflow, 0);
+    else closeModal();
+  };
+  pendingAfterRun = proceed;
 
   modal(summary, function(box){
-    box.querySelector('#mOk').onclick = function(){
-      RUN = null; acc = 0;
-      $('scAdv').classList.add('hide');
-      $('scPrep').classList.remove('hide');
-      renderPrep(); save();
-      if (overflow.length) askDiscard(overflow, 0);
-      else closeModal();
+    box.querySelector('#mOk').onclick = proceed;
+    box.querySelector('#mLog').onclick = function(){
+      /* 冒険画面に残ってログを読めるようにする */
+      closeModal();
+      $('btnAbort').classList.add('hide');
+      $('btnBackPrep').classList.remove('hide');
+      var el = $('log');
+      el.scrollTop = el.scrollHeight;
+      el.scrollIntoView({behavior:'smooth', block:'center'});
     };
   });
+}
+var pendingAfterRun = null;
+
+/* =====================================================================
+   チュートリアル（夢の中）
+   ここで手に入れたものは、目が覚めると何も残らない。
+   ===================================================================== */
+var TUT_STEPS = [
+  { t:'これは夢です', sel:null,
+    b:'あなたは眠っています。これから見るのは、冒険に出る夢です。<br><br>' +
+      '夢の中で手に入れたお金も、装備も、経験も、<b>目が覚めれば何ひとつ残りません</b>。' +
+      '気楽に、流れだけ確かめてください。' },
+
+  { t:'冒険者', sel:'#panelHero',
+    b:'ここがあなたの状態です。<br><br>' +
+      '<b>LEVEL</b> は強さの段階。<br>' +
+      '<b>HP</b> は体力。冒険の途中で尽きると、そこで打ち切られます。<br>' +
+      '<b>EXP</b> は経験値。たまるとレベルが上がり、HPとこうげきが伸びます。<br>' +
+      '<b>こうげき</b>と<b>ぼうぎょ</b>は、レベルと装備で決まります。' },
+
+  { t:'そうび', sel:'#panelGear',
+    b:'ぶき・たて・ぼうぐ・アイテムの4つの枠です。枠をクリックすると、持っているものから選べます。<br><br>' +
+      '今あるのは<b>木の棒</b>だけ。たてとぼうぐは手元にないので、まだ選べません。',
+    do:'ぶきの枠をクリックして、木の棒を装備してください',
+    act:function(){ return !!(P.equip && P.equip.w); } },
+
+  { t:'もちもの', sel:'#panelInv',
+    b:'手に入れた装備はここに入ります。ぶき・たて・ぼうぐは<b>それぞれ5つまで</b>。<br><br>' +
+      'いらないものは<b>売る</b>とお金になります。手放したくないものは<b>鍵</b>をかけると、売る操作ができなくなります。<br>' +
+      'アイテムは3つまで持てますが、冒険に持っていけるのは1つだけです。' },
+
+  { t:'よろず屋', sel:'#panelShop',
+    b:'装備を売ったお金で、品物を買えます。<br><br>' +
+      '<b>薬草</b>は、冒険中にHPが減ると自動で使われます。<br>' +
+      '<b>速度の秘薬</b>は、出発のときに飲むと早く帰ってこられます。<br>' +
+      '武器や防具も置いていますが、値は張ります。' },
+
+  { t:'ステージをえらぶ', sel:'#panelStage',
+    b:'行き先を選びます。出発したら、あとは見ているだけです。決められた時間が経つと自動で帰ってきます。<br><br>' +
+      '戦いのようすは、すべてログに残ります。<br><br>' +
+      '夢の中の行き先がふたつあります。好きなほうへ出発してください。',
+    do:'行き先をえらんで、出発してください',
+    act:function(){ return !!RUN; } }
+];
+var tutStep = 0, tutTimer = null;
+
+function tutStart(){
+  P.tut = true;
+  P.gold = 0;
+  P.items = []; P.carry = null;
+  P.inv = { w:[ mkGear(gearById('w_stick').def) ], s:[], a:[] };
+  P.equip = { w:null, s:null, a:null };
+  P.unlocked = {};
+  selStage = null;
+  tutStep = 0;
+  $('scAdv').classList.add('hide');
+  $('scPrep').classList.remove('hide');
+  renderPrep();
+  coachShow();
+}
+function coachStop(){
+  if (tutTimer){ clearInterval(tutTimer); tutTimer = null; }
+}
+function coachHide(){
+  coachStop();
+  $('coach').classList.add('hide');
+}
+function coachNext(){ tutStep++; coachShow(); }
+function coachBack(){ if (tutStep > 0){ tutStep--; coachShow(); } }
+
+function coachShow(){
+  var s = TUT_STEPS[tutStep];
+  coachStop();
+  if (!s){ coachHide(); return; }
+  $('coach').classList.remove('hide');
+  var el = s.sel ? document.querySelector(s.sel) : null;
+  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(function(){ coachPaint(); }, el ? 320 : 0);
+
+  /* 操作を待つ段階は、画面を触れるようにして、終わったら自動でつぎへ */
+  var waiting = !!(s.act && !s.act());
+  $('coach').classList.toggle('pass', waiting);
+  if (waiting){
+    tutTimer = setInterval(function(){
+      if (!P || !P.tut){ coachHide(); return; }
+      /* 装備を選ぶ画面などが開いている間は、案内を完全に引っこめる */
+      var mo = !$('modal').classList.contains('hide');
+      $('coach').classList.toggle('away', mo);
+      if (s.act()){ coachStop(); $('coach').classList.remove('away'); coachNext(); }
+    }, 150);
+  } else {
+    $('coach').classList.remove('away');
+  }
+}
+
+function coachPaint(){
+  var s = TUT_STEPS[tutStep];
+  if (!s || $('coach').classList.contains('hide')) return;
+  var hole = $('coachHole'), bub = $('coachBubble');
+  var el = s.sel ? document.querySelector(s.sel) : null;
+  var r = el ? el.getBoundingClientRect() : null;
+
+  if (r){
+    var pad = 8;
+    hole.style.left = (r.left - pad) + 'px';
+    hole.style.top = (r.top - pad) + 'px';
+    hole.style.width = (r.width + pad * 2) + 'px';
+    hole.style.height = (r.height + pad * 2) + 'px';
+    hole.style.borderWidth = '2px';
+  } else {
+    /* 穴なし＝画面全体を暗くするだけ */
+    hole.style.left = '50%'; hole.style.top = '-40px';
+    hole.style.width = '0px'; hole.style.height = '0px';
+    hole.style.borderWidth = '0px';
+  }
+
+  var done = !!(s.act && s.act());
+  var waiting = !!(s.act && !done);
+  bub.innerHTML =
+    '<h4>' + s.t + '</h4>' +
+    '<p>' + s.b + '</p>' +
+    (waiting ? '<div class="do">👉 ' + s.do + '</div>' : '') +
+    '<div class="foot">' +
+      '<button class="coach-skip" id="coachSkip">チュートリアルをスキップ</button>' +
+      (waiting ? '<button class="coach-skip" id="coachPass" style="margin-left:10px;">この手順をとばす</button>' : '') +
+      '<span class="sp"></span>' +
+      '<span class="count">' + (tutStep + 1) + ' / ' + TUT_STEPS.length + '</span>' +
+      (tutStep > 0 ? '<button id="coachBack" class="ghost" style="font-size:11.5px;padding:5px 11px;">もどる</button>' : '') +
+      (waiting ? '' : '<button id="coachNext" class="primary" style="font-size:12.5px;padding:7px 16px;">つぎへ</button>') +
+    '</div>';
+  bub.querySelector('#coachSkip').onclick = tutSkip;
+  var ps = bub.querySelector('#coachPass'); if (ps) ps.onclick = function(){ coachStop(); coachNext(); };
+  var bk = bub.querySelector('#coachBack'); if (bk) bk.onclick = coachBack;
+  var nx = bub.querySelector('#coachNext'); if (nx) nx.onclick = coachNext;
+
+  /* 吹き出しの位置 */
+  bub.style.visibility = 'hidden';
+  bub.style.left = '0px'; bub.style.top = '0px';
+  var bw = bub.offsetWidth, bh = bub.offsetHeight;
+  var left, top;
+  if (r){
+    top = r.bottom + 14;
+    if (top + bh > window.innerHeight - 12) top = r.top - bh - 14;
+    if (top < 12) top = Math.max(12, (window.innerHeight - bh) / 2);
+    left = r.left + (r.width - bw) / 2;
+  } else {
+    left = (window.innerWidth - bw) / 2;
+    top = (window.innerHeight - bh) / 2;
+  }
+  left = Math.min(Math.max(12, left), window.innerWidth - bw - 12);
+  bub.style.left = left + 'px';
+  bub.style.top = top + 'px';
+  bub.style.visibility = 'visible';
+}
+window.addEventListener('resize', function(){ coachPaint(); });
+window.addEventListener('scroll', function(){ coachPaint(); }, true);
+
+function tutSkip(){
+  coachHide();
+  modal(
+    '<h3>目を覚ましますか？</h3>' +
+    '<p>チュートリアルをとばして、本編をはじめます。</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">つづける</button>' +
+    '<button id="mYes" class="primary">目を覚ます</button></div>',
+    function(box){
+      box.querySelector('#mNo').onclick = function(){ closeModal(); coachShow(); };
+      box.querySelector('#mYes').onclick = tutWake;
+    }
+  );
+}
+/* 夢から覚める。夢の中のものは何ひとつ持ち越さない */
+function tutWake(){
+  stopTimer(); coachHide();
+  RUN = null; acc = 0; selStage = null; logBuf = [];
+  P = DEV ? seedDevGear(newPlayer()) : newPlayer();
+  $('scAdv').classList.add('hide');
+  $('scPrep').classList.remove('hide');
+  renderPrep(); save();
+  modal(
+    '<h3>☀ 目が覚めた</h3>' +
+    '<p>夢だった。<br><br>' +
+    '手の中には何も残っていない。あの木の棒も、倒したスライムの感触も、夢の中に置いてきた。<br><br>' +
+    'ただ、やりかたは覚えている。<b>ここからが本当の旅</b>です。</p>' +
+    '<div class="acts"><button id="mOk" class="primary">はじめる</button></div>',
+    function(box){ box.querySelector('#mOk').onclick = closeModal; }
+  );
+}
+
+/* 失敗したとき、置いてきた荷物を売値の3倍で買い戻す */
+function askBuyback(list){
+  var chosen = {};
+  function cost(){
+    var t = 0;
+    list.forEach(function(x, i){ if (chosen[i]) t += x.price * BAL.buybackMul; });
+    return t;
+  }
+  function draw(){
+    var total = cost(), over = total > P.gold;
+    modal(
+      '<h3>🪢 荷物の買い戻し</h3>' +
+      '<p>置いてきた荷物は、拾った者が町で売りに出しています。<b>売値の' + BAL.buybackMul + '倍</b>を払えば取り返せます。</p>' +
+      '<div class="invlist">' + list.map(function(x, i){
+        var pr = x.price * BAL.buybackMul;
+        return '<div class="item' + (chosen[i] ? ' isEq' : '') + '">' +
+          '<span class="ic">' + x.ic + '</span>' +
+          '<span class="nm">' + esc(x.n) + '<span class="shopdesc">' + x.sub + '</span></span>' +
+          '<span class="price">' + pr + ' G</span>' +
+          '<span class="btns"><button data-i="' + i + '">' + (chosen[i] ? '✓ 買う' : '買う') + '</button></span>' +
+          '</div>';
+      }).join('') + '</div>' +
+      '<p style="font-size:12px;margin-top:12px;">合計 <b class="gold">' + total + ' G</b>' +
+      '　/　しょじきん <b class="gold">' + P.gold + ' G</b>' +
+      (over ? '　<span style="color:var(--red)">足りません</span>' : '') + '</p>' +
+      '<div class="acts"><button id="mSkip" class="ghost">あきらめる</button>' +
+      '<button id="mBuy" class="primary"' + (over || total === 0 ? ' disabled' : '') + '>買い戻す</button></div>',
+      function(box){
+        box.querySelectorAll('.invlist button[data-i]').forEach(function(b){
+          b.onclick = function(){ var i = +b.dataset.i; chosen[i] = !chosen[i]; draw(); };
+        });
+        box.querySelector('#mSkip').onclick = function(){ closeModal(); renderPrep(); save(); };
+        var buy = box.querySelector('#mBuy');
+        if (!buy.disabled) buy.onclick = function(){
+          var total2 = cost();
+          if (total2 > P.gold) return;
+          P.gold -= total2;
+          var over2 = [];
+          list.forEach(function(x, i){
+            if (!chosen[i]) return;
+            if (x.kind === 'item'){ addItem(P, x.id); return; }
+            if (P.inv[x.slot].length < BAL.invMax) P.inv[x.slot].push(mkGear(x.def));
+            else over2.push({slot:x.slot, def:x.def});
+          });
+          renderPrep(); save();
+          if (over2.length) askDiscard(over2, 0); else closeModal();
+        };
+      }
+    );
+  }
+  draw();
 }
 
 /* そうびスロットから選ぶ */
 function openPicker(slot){
   if (slot === 'i'){
-    invTab = 'i';
-    Array.prototype.forEach.call($('invtabs').children, function(x){ x.classList.toggle('on', x.dataset.k === 'i'); });
-    renderPrep();
-    $('shoplist').scrollIntoView({behavior:'smooth', block:'center'});
+    if (!P.items.length){
+      invTab = 'i';
+      Array.prototype.forEach.call($('invtabs').children, function(x){ x.classList.toggle('on', x.dataset.k === 'i'); });
+      renderPrep();
+      $('shoplist').scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    var carried = false;
+    modal(
+      '<h3>🧪 持っていくアイテムをえらぶ</h3>' +
+      '<p>持てるのは ' + BAL.itemMax + ' つまで。そのうち<b>冒険に持っていけるのは1つだけ</b>です。</p>' +
+      '<div class="invlist">' + P.items.map(function(id){
+        var it = itemById(id), isC = !carried && id === P.carry;
+        if (isC) carried = true;
+        return '<div class="item' + (isC?' isEq':'') + '"><span class="ic">' + it.ic + '</span>' +
+          '<span class="nm">' + it.n + '<span class="shopdesc">' + it.desc + '</span></span>' +
+          '<span class="vl">' + it.eff + '</span>' +
+          '<span class="btns"><button data-id="' + id + '"' + (isC?' disabled':'') + '>' +
+          (isC ? '持っていく' : 'これにする') + '</button></span></div>';
+      }).join('') + '</div>' +
+      '<div class="acts">' + (P.carry ? '<button id="mOff" class="ghost">持っていかない</button>' : '') +
+      '<button id="mClose" class="primary">とじる</button></div>',
+      function(box){
+        box.querySelectorAll('.invlist button[data-id]').forEach(function(b){
+          if (b.disabled) return;
+          b.onclick = function(){ P.carry = b.dataset.id; closeModal(); renderPrep(); save(); };
+        });
+        var off = box.querySelector('#mOff');
+        if (off) off.onclick = function(){ P.carry = null; closeModal(); renderPrep(); save(); };
+        box.querySelector('#mClose').onclick = closeModal;
+      },
+      true
+    );
     return;
   }
   var rows = invSorted(slot), eq = P.equip[slot];
@@ -1086,7 +1788,8 @@ function openPicker(slot){
       var off = box.querySelector('#mOff');
       if (off) off.onclick = function(){ P.equip[slot] = null; closeModal(); renderPrep(); save(); };
       box.querySelector('#mClose').onclick = closeModal;
-    }
+    },
+    true
   );
 }
 
@@ -1099,6 +1802,7 @@ function sellGear(def){ P.gold += def.p; P.totalGold += def.p; }
 function removeFromInv(slot, index, sell){
   var list = P.inv[slot];
   if (index < 0 || index >= list.length) return null;
+  if (list[index].locked) return null;          /* ロック中は売れない */
   var removed = list.splice(index, 1)[0];
   if (sell) sellGear(removed);
   if (P.equip[slot] && P.equip[slot].id === removed.id){
@@ -1117,18 +1821,20 @@ function askDiscard(list, i){
     '新しく手に入れた <b>' + g.def.ic + esc(g.def.n) + '（+' + g.def.v + '）</b> を持ち帰るには、どれかを売る必要があります。<br>' +
     '<span style="color:var(--dim);font-size:12px;">強い順にならんでいます。売ったぶんは、しょじきん（現在 <span class="gold">' + P.gold + ' G</span>）になります。</span></p>' +
     '<div class="invlist">' + invSorted(slot, cur).map(function(r){
-      return '<div class="item' + (r.eq?' isEq':'') + '"><span class="ic">' + r.g.ic + '</span>' +
+      return '<div class="item' + (r.eq?' isEq':'') + (r.g.locked?' isLocked':'') + '"><span class="ic">' + r.g.ic + '</span>' +
              '<span class="nm">' + esc(r.g.n) + ' ' + serTag(r.g) + badges(r) + '</span>' +
              '<span class="vl">+' + r.g.v + '</span><span class="btns"><button data-j="' + r.i + '"' +
-             (r.eq ? ' class="danger"' : '') + '>' + (r.eq ? '装備中だが売る' : 'これを売る') +
-             ' <span class="price">+' + r.g.p + 'G</span></button></span></div>';
+             (r.g.locked ? ' disabled' : (r.eq ? ' class="danger"' : '')) + '>' +
+             (r.g.locked ? 'ロック中' : (r.eq ? '装備中だが売る' : 'これを売る') + ' <span class="price">+' + r.g.p + 'G</span>') +
+             '</button></span></div>';
     }).join('') + '</div>' +
     '<div class="acts"><button id="mDrop" class="ghost">新しい方を売る（+' + g.def.p + 'G）</button></div>',
     function(box){
       box.querySelectorAll('button[data-j]').forEach(function(b){
+        if (b.disabled) return;
         b.onclick = function(){
           removeFromInv(slot, +b.dataset.j, true);
-          P.inv[slot].push(g.def);
+          P.inv[slot].push(mkGear(g.def));
           askDiscard(list, i+1);
         };
       });
@@ -1146,8 +1852,56 @@ $('slots').addEventListener('click', function(e){
 });
 $('stages').addEventListener('click', function(e){
   var b = e.target.closest('.stage'); if (!b) return;
+  var s = stageById(b.dataset.st);
+  if (isLocked(s)){ openGate(s); return; }
+  /* 選択中のものをもう一度おすと、確認して出発 */
+  if (selStage === b.dataset.st){ confirmDepart(s); return; }
   selStage = b.dataset.st; renderPrep();
 });
+
+function confirmDepart(s){
+  modal(
+    '<h3>' + s.ic + ' ' + s.n + '</h3>' +
+    '<p>ここへ出発しますか？</p>' +
+    '<p style="font-size:12px;color:var(--dim);">所要 ' + stageTimeLabel(s) + '　/　LEVEL ' + s.lv + '<br>' + s.desc + '</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="primary">出発する</button></div>',
+    function(box){
+      box.querySelector('#mNo').onclick = closeModal;
+      box.querySelector('#mYes').onclick = function(){ closeModal(); startRun(); };
+    },
+    true
+  );
+}
+
+/* 門番との交渉 */
+function openGate(s){
+  var afford = P.gold >= s.lockCost;
+  modal(
+    '<h3>' + s.gate.ic + ' ' + s.gate.who + '</h3>' +
+    s.gate.lines.map(function(l){ return '<p style="margin-bottom:9px;">「' + l + '」</p>'; }).join('') +
+    '<p style="font-size:12px;color:var(--dim);">しょじきん <span class="gold">' + P.gold + ' G</span>' +
+    (afford ? '' : '　— あと <span class="gold">' + (s.lockCost - P.gold) + ' G</span> 足りません') + '</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">引き返す</button>' +
+    '<button id="mYes" class="primary"' + (afford ? '' : ' disabled') + '>' + s.lockCost + ' G をわたす</button></div>',
+    function(box){
+      box.querySelector('#mNo').onclick = closeModal;
+      var yes = box.querySelector('#mYes');
+      if (!yes.disabled) yes.onclick = function(){
+        if (P.gold < s.lockCost) return;
+        P.gold -= s.lockCost;
+        P.unlocked[s.id] = true;
+        selStage = s.id;
+        renderPrep(); save();
+        modal('<h3>' + s.gate.ic + ' ' + s.gate.who + '</h3>' +
+          '<p>「' + s.gate.paid + '」</p>' +
+          '<p style="font-size:12px;color:var(--dim);">' + s.ic + ' <b>' + s.n + '</b> へ行けるようになりました。一度払えば、次からはそのまま通れます。</p>' +
+          '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
+          function(b2){ b2.querySelector('#mOk').onclick = closeModal; }, true);
+      };
+    },
+    true
+  );
+}
 $('btnGo').addEventListener('click', startRun);
 $('invtabs').addEventListener('click', function(e){
   var b = e.target.closest('button'); if (!b) return;
@@ -1156,10 +1910,24 @@ $('invtabs').addEventListener('click', function(e){
   renderPrep();
 });
 $('invlist').addEventListener('click', function(e){
-  var b = e.target.closest('button'); if (!b) return;
+  var b = e.target.closest('button'); if (!b || b.disabled) return;
+  /* アイテムタブ */
+  if (b.dataset.iact){
+    if (b.dataset.iact === 'carry') P.carry = b.dataset.id;
+    else if (b.dataset.iact === 'uncarry') P.carry = null;
+    else if (b.dataset.iact === 'drop'){
+      var idx = +b.dataset.idx, dropped = P.items.splice(idx, 1)[0];
+      if (P.carry === dropped && P.items.indexOf(dropped) < 0) P.carry = null;
+    }
+    renderPrep(); save();
+    return;
+  }
+  /* 装備タブ */
   var i = +b.dataset.i, g = P.inv[invTab][i];
   if (!g) return;
-  if (b.dataset.act === 'eq'){
+  if (b.dataset.act === 'lock'){
+    g.locked = !g.locked;
+  } else if (b.dataset.act === 'eq'){
     P.equip[invTab] = (P.equip[invTab] && P.equip[invTab].id === g.id) ? null : g;
   } else {
     removeFromInv(invTab, i, true);
@@ -1169,9 +1937,19 @@ $('invlist').addEventListener('click', function(e){
 $('shoplist').addEventListener('click', function(e){
   var b = e.target.closest('button[data-buy]'); if (!b || b.disabled) return;
   var s = SHOP.filter(function(x){ return x.id === b.dataset.buy; })[0];
-  if (!s || P.gold < s.price || P.item) return;
-  P.gold -= s.price; P.item = s.id;
+  if (!s || P.gold < s.price) return;
+  if (s.kind === 'item'){
+    if (!addItem(P, s.id)) return;
+  } else {
+    var gg = gearById(s.id);
+    if (!gg || P.inv[gg.slot].length >= BAL.invMax) return;
+    P.inv[gg.slot].push(mkGear(gg.def));
+  }
+  P.gold -= s.price;
   renderPrep(); save();
+});
+$('btnBackPrep').addEventListener('click', function(){
+  if (pendingAfterRun){ var f = pendingAfterRun; pendingAfterRun = null; f(); }
 });
 $('btnAbort').addEventListener('click', function(){
   modal('<h3>冒険を中断しますか？</h3><p>今回の戦利品と経験値はそのまま残りますが、行程は途中で終わります。</p>' +
@@ -1187,6 +1965,13 @@ document.querySelectorAll('.speed').forEach(function(sp){
     speed = +b.dataset.sp;
     document.querySelectorAll('.speed button').forEach(function(x){ x.classList.toggle('on', +x.dataset.sp === speed); });
   });
+});
+if ($('btnDevGear')) $('btnDevGear').addEventListener('click', function(){
+  devFillGear(P);
+  P.gold += DEV_GOLD;
+  invTab = 'w';
+  Array.prototype.forEach.call($('invtabs').children, function(x){ x.classList.toggle('on', x.dataset.k === 'w'); });
+  renderPrep(); save();
 });
 $('btnName').addEventListener('click', function(){
   modal('<h3>名前をかえる</h3><p>セーブデータに記録されます（ID: <code>' + P.id + '</code>）。</p>' +
@@ -1217,7 +2002,7 @@ function getDownloads(){
 try { getDownloads(); } catch(e){}
 
 function saveToFile(msgEl){
-  var json = JSON.stringify(serialize(), null, 2);
+  var json = saveFileText();
   var name = 'idlequest_' + P.id + '.json';
   msgEl.textContent = '保存の準備をしています…';
   getDownloads().then(function(dl){
@@ -1246,7 +2031,7 @@ function saveToFile(msgEl){
 
 function applyImport(text){
   try{
-    var d = JSON.parse(text);
+    var d = unpackSave(text);
     if (!d || typeof d !== 'object' || !d.id) throw new Error('bad');
     var r = deserialize(d);
     P = r.p; RUN = null; stopTimer();
@@ -1257,18 +2042,22 @@ function applyImport(text){
           '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
       function(box){ box.querySelector('#mOk').onclick = closeModal; });
   }catch(err){
-    modal('<h3>読み込めませんでした</h3><p>セーブデータの形式が違うようです。書き出したときの文字が、途中で切れていないか確かめてください。</p>' +
+    var why = (err && err.message === 'tampered')
+      ? 'データの中身と合言葉が合いません。書き換えられているか、コピーのときに一部が欠けた可能性があります。'
+      : 'セーブデータの形式が違うようです。書き出したときの文字が、途中で切れていないか確かめてください。';
+    modal('<h3>読み込めませんでした</h3><p>' + why + '</p>' +
           '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
-      function(box){ box.querySelector('#mOk').onclick = closeModal; });
+      function(box){ box.querySelector('#mOk').onclick = closeModal; }, true);
   }
 }
 $('btnExport').addEventListener('click', function(){
-  var data = JSON.stringify(serialize());
+  var data = packSave(serialize());
   modal(
     '<h3>セーブの書き出し</h3>' +
     '<p>下の文字がセーブデータです。コピーしてGoogleドライブのメモやメールに貼っておけば、別の端末やブラウザの「読み込み」から続きを遊べます。</p>' +
     '<textarea id="mTa" readonly>' + esc(data) + '</textarea>' +
-    '<div class="acts"><button id="mFile" class="ghost">ファイルに保存</button><button id="mCopy" class="primary">コピー</button></div>' +
+    '<div class="acts"><button id="mClose" class="ghost">とじる</button>' +
+    '<button id="mFile" class="ghost">ファイルに保存</button><button id="mCopy" class="primary">コピー</button></div>' +
     '<div class="note" id="mMsg"></div>',
     function(box){
       var ta = box.querySelector('#mTa'), msg = box.querySelector('#mMsg');
@@ -1282,7 +2071,9 @@ $('btnExport').addEventListener('click', function(){
         } else msg.textContent = '上の文字を選んでコピーしてください。';
       };
       box.querySelector('#mFile').onclick = function(){ saveToFile(msg); };
-    }
+      box.querySelector('#mClose').onclick = closeModal;
+    },
+    true
   );
 });
 $('btnImport').addEventListener('click', function(){
@@ -1290,15 +2081,18 @@ $('btnImport').addEventListener('click', function(){
     '<h3>セーブの読み込み</h3>' +
     '<p>書き出した文字を貼り付けるか、保存したファイルを選んでください。<b style="color:var(--red)">いまの進行度は上書きされます。</b></p>' +
     '<textarea id="mTa" placeholder="ここにセーブデータを貼り付け"></textarea>' +
-    '<div class="acts"><button id="mFile" class="ghost">ファイルを選ぶ</button><button id="mGo" class="primary">読み込む</button></div>',
+    '<div class="acts"><button id="mClose" class="ghost">やめる</button>' +
+    '<button id="mFile" class="ghost">ファイルを選ぶ</button><button id="mGo" class="primary">読み込む</button></div>',
     function(box){
       box.querySelector('#mTa').focus();
+      box.querySelector('#mClose').onclick = closeModal;
       box.querySelector('#mFile').onclick = function(){ $('fileIn').click(); };
       box.querySelector('#mGo').onclick = function(){
         var t = box.querySelector('#mTa').value.trim();
         if (t) applyImport(t);
       };
-    }
+    },
+    true
   );
 });
 $('fileIn').addEventListener('change', function(e){
@@ -1309,29 +2103,30 @@ $('fileIn').addEventListener('change', function(e){
   e.target.value = '';
 });
 $('btnReset').addEventListener('click', function(){
-  modal('<h3>最初からやり直しますか？</h3><p>レベル・装備・もちものがすべて消えます。この操作は取り消せません。<br>先に「セーブ書き出し」でバックアップしておくと安心です。</p>' +
-    '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="danger">初期化する</button></div>',
+  modal('<h3>さいしょからはじめますか？</h3><p>レベル・装備・もちものがすべて消えます。この操作は取り消せません。<br>先に「セーブ書き出し」でバックアップしておくと安心です。<br><br>' +
+    'やり直すと、<b>遊びかたを確かめる夢</b>から始まります。とばすこともできます。</p>' +
+    '<div class="acts"><button id="mNo" class="ghost">やめる</button><button id="mYes" class="danger">さいしょからはじめる</button></div>',
     function(box){
       box.querySelector('#mNo').onclick = closeModal;
       box.querySelector('#mYes').onclick = function(){
         stopTimer(); P = newPlayer(); RUN = null; selStage = null; logBuf = [];
         try{ localStorage.removeItem(SAVEKEY); }catch(e){}
-        $('scAdv').classList.add('hide'); $('scPrep').classList.remove('hide');
-        closeModal(); renderPrep(); save();
+        closeModal();
+        tutStart();
       };
-    });
+    }, true);
 });
 window.addEventListener('beforeunload', save);
 
 /* =====================================================================
    起動
    ===================================================================== */
-if (!load()) P = newPlayer();
+if (!load()) P = DEV ? seedDevGear(newPlayer()) : newPlayer();
 if (!P) P = newPlayer();
 
 if (RUN && !RUN.result && RUN.tick < RUN.totalTicks){
   /* 放置中に閉じていた分を早送りする */
-  var away = Math.floor((Date.now() - (RUN.startedAt || Date.now())) / 1000 / BAL.tickSeconds) - RUN.tick;
+  var away = Math.floor((Date.now() - (RUN.startedAt || Date.now())) / 1000 * (RUN.speedMul || 1) / (RUN.tickSec || BAL.tickSeconds)) - RUN.tick;
   selStage = RUN.stageId;
   logBuf = [];
   pushLog('sys', '——— 冒険のつづきから再開します ———');
@@ -1339,10 +2134,10 @@ if (RUN && !RUN.result && RUN.tick < RUN.totalTicks){
     var n = Math.min(away, RUN.totalTicks - RUN.tick);
     for (var i=0;i<n && !RUN.result;i++){
       var ev = step(RUN, P, stats(P));
-      var w = new Date(RUN.startedAt + RUN.tick * BAL.tickSeconds * 1000);
+      var w = new Date(RUN.startedAt + RUN.tick * (RUN.tickSec || BAL.tickSeconds) * 1000 / (RUN.speedMul || 1));
       for (var j=0;j<ev.length;j++) pushLog(ev[j].k, ev[j].m, w);
     }
-    pushLog('sys', '（離れていた ' + mmss(n*BAL.tickSeconds) + ' 分の出来事を反映しました）');
+    pushLog('sys', '（離れていた ' + mmss(n*(RUN.tickSec || BAL.tickSeconds)) + ' の出来事を反映しました）');
   }
   $('scPrep').classList.add('hide');
   $('scAdv').classList.remove('hide');
