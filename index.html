@@ -277,6 +277,10 @@ input[type=text]{
   background:var(--panel);border:1px solid #3c4766;border-radius:14px;
   padding:16px 18px 13px;box-shadow:0 20px 56px rgba(0,0,0,.65);
 }
+/* 案内中は下に余白を足して、最後のパネルも画面上部まで送れるようにする */
+body.coaching .wrap{padding-bottom:80vh;}
+#coachBubble.sheet{max-height:48vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#coachBubble.sheet p{font-size:12.5px;line-height:1.75;}
 #coachBubble h4{margin:0 0 8px;font-size:14.5px;color:var(--gold);letter-spacing:.04em;}
 #coachBubble p{margin:0;font-size:13px;line-height:1.85;color:#c6cdea;}
 #coachBubble .do{
@@ -1547,6 +1551,7 @@ function coachStop(){
 function coachHide(){
   coachStop();
   $('coach').classList.add('hide');
+  document.body.classList.remove('coaching');
 }
 function coachNext(){ tutStep++; coachShow(); }
 function coachBack(){ if (tutStep > 0){ tutStep--; coachShow(); } }
@@ -1556,9 +1561,8 @@ function coachShow(){
   coachStop();
   if (!s){ coachHide(); return; }
   $('coach').classList.remove('hide');
-  var el = s.sel ? document.querySelector(s.sel) : null;
-  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
-  setTimeout(function(){ coachPaint(); }, el ? 320 : 0);
+  document.body.classList.add('coaching');
+  coachPaint(true);
 
   /* 操作を待つ段階は、画面を触れるようにして、終わったら自動でつぎへ */
   var waiting = !!(s.act && !s.act());
@@ -1576,26 +1580,13 @@ function coachShow(){
   }
 }
 
-function coachPaint(){
+/* doScroll=true のときだけ画面を動かす。
+   （スクロール中の再描画で動かすと、指での操作と取り合いになるため） */
+function coachPaint(doScroll){
   var s = TUT_STEPS[tutStep];
   if (!s || $('coach').classList.contains('hide')) return;
   var hole = $('coachHole'), bub = $('coachBubble');
   var el = s.sel ? document.querySelector(s.sel) : null;
-  var r = el ? el.getBoundingClientRect() : null;
-
-  if (r){
-    var pad = 8;
-    hole.style.left = (r.left - pad) + 'px';
-    hole.style.top = (r.top - pad) + 'px';
-    hole.style.width = (r.width + pad * 2) + 'px';
-    hole.style.height = (r.height + pad * 2) + 'px';
-    hole.style.borderWidth = '2px';
-  } else {
-    /* 穴なし＝画面全体を暗くするだけ */
-    hole.style.left = '50%'; hole.style.top = '-40px';
-    hole.style.width = '0px'; hole.style.height = '0px';
-    hole.style.borderWidth = '0px';
-  }
 
   var done = !!(s.act && s.act());
   var waiting = !!(s.act && !done);
@@ -1616,27 +1607,93 @@ function coachPaint(){
   var bk = bub.querySelector('#coachBack'); if (bk) bk.onclick = coachBack;
   var nx = bub.querySelector('#coachNext'); if (nx) nx.onclick = coachNext;
 
-  /* 吹き出しの位置 */
+  /* --- 吹き出しの置き場所を決める --- */
+  var narrow = window.innerWidth < 700;
+  var M = 10;
   bub.style.visibility = 'hidden';
-  bub.style.left = '0px'; bub.style.top = '0px';
-  var bw = bub.offsetWidth, bh = bub.offsetHeight;
-  var left, top;
-  if (r){
-    top = r.bottom + 14;
-    if (top + bh > window.innerHeight - 12) top = r.top - bh - 14;
-    if (top < 12) top = Math.max(12, (window.innerHeight - bh) / 2);
-    left = r.left + (r.width - bw) / 2;
+  bub.classList.toggle('sheet', narrow);
+  if (narrow){
+    bub.style.left = M + 'px';
+    bub.style.width = (window.innerWidth - M * 2) + 'px';
   } else {
-    left = (window.innerWidth - bw) / 2;
-    top = (window.innerHeight - bh) / 2;
+    bub.style.width = '';
   }
-  left = Math.min(Math.max(12, left), window.innerWidth - bw - 12);
-  bub.style.left = left + 'px';
-  bub.style.top = top + 'px';
+  bub.style.top = '0px';
+  var bw = bub.offsetWidth, bh = bub.offsetHeight;
+
+  if (!el){
+    /* 対象なし＝画面全体を暗くして、中央に出す */
+    hole.style.left = '50%'; hole.style.top = '-40px';
+    hole.style.width = '0px'; hole.style.height = '0px';
+    hole.style.borderWidth = '0px';
+    bub.style.left = Math.max(M, (window.innerWidth - bw) / 2) + 'px';
+    bub.style.top = Math.max(M, (window.innerHeight - bh) / 2) + 'px';
+    bub.style.visibility = 'visible';
+    return;
+  }
+
+  var r = el.getBoundingClientRect();
+
+  /* 対象（穴）と吹き出しが実際に重なるかを測る */
+  function hits(bLeft, bTop, rect){
+    var pad = 8;
+    return (bLeft < rect.right + pad && bLeft + bw > rect.left - pad &&
+            bTop  < rect.bottom + pad && bTop  + bh > rect.top - pad);
+  }
+  /* 下に固定して、対象をその上へ送る */
+  function asSheet(){
+    var bTop = window.innerHeight - bh - M;
+    var freeTop = M, free = (bTop - 12) - freeTop;
+    if (doScroll){
+      var want = (r.height <= free) ? freeTop + (free - r.height) / 2 : freeTop;
+      var dy = r.top - want;
+      if (Math.abs(dy) > 3){ window.scrollBy(0, dy); r = el.getBoundingClientRect(); }
+    }
+    bub.style.left = (narrow ? M : Math.max(M, (window.innerWidth - bw) / 2)) + 'px';
+    bub.style.top = bTop + 'px';
+  }
+
+  if (narrow){
+    asSheet();
+  } else {
+    if (doScroll){
+      /* 対象が画面の中ほどに来るように */
+      var dy2 = r.top - Math.max(16, (window.innerHeight - r.height) / 2);
+      if (Math.abs(dy2) > 3){ window.scrollBy(0, dy2); r = el.getBoundingClientRect(); }
+    }
+    var left = Math.min(Math.max(12, r.left + (r.width - bw) / 2), window.innerWidth - bw - 12);
+    var below = r.bottom + 14, above = r.top - bh - 14;
+    var top = null;
+    if (below + bh <= window.innerHeight - 12 && !hits(left, below, r)) top = below;
+    else if (above >= 12 && !hits(left, above, r)) top = above;
+    if (top === null){
+      /* 上にも下にも入らない → 下に固定して対象を送る */
+      asSheet();
+    } else {
+      bub.style.left = left + 'px';
+      bub.style.top = top + 'px';
+    }
+  }
+
+  /* --- 穴は最後に、動かしたあとの位置で --- */
+  var pad = 8;
+  var hx = r.left - pad, hy = r.top - pad, hw = r.width + pad * 2, hh = r.height + pad * 2;
+  var br = bub.getBoundingClientRect();
+  /* 画面に入りきらない対象は、吹き出しの手前で切る（重ねない） */
+  if (hx < br.right && hx + hw > br.left && hy < br.bottom && hy + hh > br.top && br.top > hy + 48){
+    hh = br.top - 8 - hy;
+  }
+  if (hy < 2){ hh += hy - 2; hy = 2; }
+  if (hy + hh > window.innerHeight - 2) hh = Math.max(40, window.innerHeight - 2 - hy);
+  hole.style.left = hx + 'px';
+  hole.style.top = hy + 'px';
+  hole.style.width = hw + 'px';
+  hole.style.height = hh + 'px';
+  hole.style.borderWidth = '2px';
   bub.style.visibility = 'visible';
 }
-window.addEventListener('resize', function(){ coachPaint(); });
-window.addEventListener('scroll', function(){ coachPaint(); }, true);
+window.addEventListener('resize', function(){ coachPaint(true); });
+window.addEventListener('scroll', function(){ coachPaint(false); }, true);
 
 function tutSkip(){
   coachHide();
