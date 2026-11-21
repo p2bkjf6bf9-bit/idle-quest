@@ -1304,6 +1304,10 @@ function startRun(){
 
 function startTimer(){
   stopTimer();
+  /* 出発した瞬間を起点にする。
+     ここを入れ忘れると、準備画面を開いていた時間まで冒険時間に足されてしまう */
+  lastNow = Date.now();
+  acc = 0;
   timer = setInterval(tickLoop, 100);
 }
 function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
@@ -1708,6 +1712,28 @@ function tutSkip(){
     }
   );
 }
+/* はじめてこのページを開いたときの入口 */
+function showWelcome(){
+  modal(
+    '<h3>はるかなる遠征</h3>' +
+    '<p>装備をととのえて行き先を選んだら、あとは待つだけ。' +
+    '冒険のようすはログに流れていきます。インストールもログインもいりません。</p>' +
+    '<p style="font-size:12px;color:var(--dim);line-height:1.9;">' +
+    'はじめての方は、<b>短い案内</b>（夢の中の冒険・1分ほど）から始められます。とちゅうでやめることもできます。<br>' +
+    '前に遊んだ<b>セーブデータ</b>をお持ちの方は、そちらを読み込んでください。</p>' +
+    '<div class="acts">' +
+      '<button id="mLoad" class="ghost">セーブデータを読み込む</button>' +
+      '<button id="mStart" class="primary">はじめる</button>' +
+    '</div>',
+    function(box){
+      box.querySelector('#mStart').onclick = function(){ closeModal(); tutStart(); };
+      box.querySelector('#mLoad').onclick = function(){
+        openImport({ fresh:true, backLabel:'もどる', onCancel:showWelcome });
+      };
+    }
+  );
+}
+
 /* 夢から覚める。夢の中のものは何ひとつ持ち越さない */
 function tutWake(){
   stopTimer(); coachHide();
@@ -2086,6 +2112,7 @@ function saveToFile(msgEl){
   });
 }
 
+var onImportFail = null;   /* 読み込みに失敗したとき戻る先（初回の選択画面など） */
 function applyImport(text){
   try{
     var d = unpackSave(text);
@@ -2097,14 +2124,19 @@ function applyImport(text){
     modal('<h3>読み込みました</h3><p><b>' + esc(P.name) + '</b>（' + P.id + '）　レベル ' + P.lv +
           '　しょじきん <span class="gold">' + P.gold + ' G</span></p>' +
           '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
-      function(box){ box.querySelector('#mOk').onclick = closeModal; });
+      function(box){ box.querySelector('#mOk').onclick = function(){ onImportFail = null; closeModal(); }; });
   }catch(err){
     var why = (err && err.message === 'tampered')
       ? 'データの中身と合言葉が合いません。書き換えられているか、コピーのときに一部が欠けた可能性があります。'
       : 'セーブデータの形式が違うようです。書き出したときの文字が、途中で切れていないか確かめてください。';
     modal('<h3>読み込めませんでした</h3><p>' + why + '</p>' +
           '<div class="acts"><button id="mOk" class="primary">OK</button></div>',
-      function(box){ box.querySelector('#mOk').onclick = closeModal; }, true);
+      function(box){
+        box.querySelector('#mOk').onclick = function(){
+          closeModal();
+          if (onImportFail){ var f = onImportFail; onImportFail = null; f(); }
+        };
+      }, !onImportFail);
   }
 }
 $('btnExport').addEventListener('click', function(){
@@ -2133,25 +2165,33 @@ $('btnExport').addEventListener('click', function(){
     true
   );
 });
-$('btnImport').addEventListener('click', function(){
+function openImport(opts){
+  opts = opts || {};
   modal(
     '<h3>セーブの読み込み</h3>' +
-    '<p>書き出した文字を貼り付けるか、保存したファイルを選んでください。<b style="color:var(--red)">いまの進行度は上書きされます。</b></p>' +
+    '<p>書き出した文字を貼り付けるか、保存したファイルを選んでください。' +
+    (opts.fresh ? '' : '<b style="color:var(--red)">いまの進行度は上書きされます。</b>') + '</p>' +
     '<textarea id="mTa" placeholder="ここにセーブデータを貼り付け"></textarea>' +
-    '<div class="acts"><button id="mClose" class="ghost">やめる</button>' +
+    '<div class="acts"><button id="mClose" class="ghost">' + (opts.backLabel || 'やめる') + '</button>' +
     '<button id="mFile" class="ghost">ファイルを選ぶ</button><button id="mGo" class="primary">読み込む</button></div>',
     function(box){
       box.querySelector('#mTa').focus();
-      box.querySelector('#mClose').onclick = closeModal;
+      onImportFail = opts.onCancel || null;
+      box.querySelector('#mClose').onclick = function(){
+        onImportFail = null;
+        closeModal();
+        if (opts.onCancel) opts.onCancel();
+      };
       box.querySelector('#mFile').onclick = function(){ $('fileIn').click(); };
       box.querySelector('#mGo').onclick = function(){
         var t = box.querySelector('#mTa').value.trim();
         if (t) applyImport(t);
       };
     },
-    true
+    !opts.onCancel
   );
-});
+}
+$('btnImport').addEventListener('click', function(){ openImport(); });
 $('fileIn').addEventListener('change', function(e){
   var f = e.target.files[0]; if (!f) return;
   var fr = new FileReader();
@@ -2178,7 +2218,8 @@ window.addEventListener('beforeunload', save);
 /* =====================================================================
    起動
    ===================================================================== */
-if (!load()) P = DEV ? seedDevGear(newPlayer()) : newPlayer();
+var isFirstVisit = !load();
+if (isFirstVisit) P = DEV ? seedDevGear(newPlayer()) : newPlayer();
 if (!P) P = newPlayer();
 
 if (RUN && !RUN.result && RUN.tick < RUN.totalTicks){
@@ -2207,7 +2248,8 @@ if (RUN && !RUN.result && RUN.tick < RUN.totalTicks){
   RUN = null;
 }
 renderPrep();
-save();   /* 初回起動でもIDと初期状態を確定させる */
+if (isFirstVisit) showWelcome();   /* はじめての人は、案内か読み込みかを選ぶ */
+else save();
 
 })();
 </script>
